@@ -3,13 +3,12 @@ __kernel void square(__global float* d_p,
                      __global float* d_o,
                      const int count)
 {
-    int i = get_local_id(0);
-//    d_o[i] = i;    
+    int i = get_local_id(0); 
     if (i < count - 2 && i > 1)
     { 
         float p = d_p[i], u = d_u[i], 
-               pl = d_p[i-1], ul = d_u[i-1], 
-               pr = d_p[i+1], ur = d_u[i+1];
+              pl = d_p[i-1], ul = d_u[i-1], 
+              pr = d_p[i+1], ur = d_u[i+1];
         barrier(CLK_GLOBAL_MEM_FENCE);        
        /* problem data */
         float rho = 1.0, K = 4.0;
@@ -51,9 +50,6 @@ __kernel void square(__global float* d_p,
         
         d_p[i] = p;
         d_u[i] = u;
-        d_o[i] = d_p[i];
     }
-    else{
-        d_o[i] = -1;
-    }
+    d_o[i] = d_p[i];
 }

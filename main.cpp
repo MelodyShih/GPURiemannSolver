@@ -150,7 +150,6 @@ int main(int argc, char const *argv[])
     std::size_t global=count;
     std::size_t local =count;
 
-    std::cout<<"global = "<<global<<";local = "<<local<<std::endl;
 /* Initialize data */
 	for(int i = 0; i < count; i++){
         if(i == 2){
@@ -193,34 +192,22 @@ int main(int argc, char const *argv[])
     // CheckError(clGetKernelWorkGroupInfo(kernel, deviceIds[0], CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL), 
     // 	       "Retrieve work group info");
 
-/* Launch kernel */
-	//CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, NULL),"");
-	CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL),"111");
+	/* Launch kernel */
+	for (int j = 0; j < 10; ++j)
+	{
+		std::cout<<std::endl<<"Time Step = "<<j<<std::endl;
+		CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL),"111");
 
-/* Read ouput array */
-    CheckError(clEnqueueReadBuffer(commands, d_o, CL_TRUE, 0, sizeof(float)*count, results, 0, NULL, NULL ),"aaaaaaa");  
+		/* Read ouput array */
+	    CheckError(clEnqueueReadBuffer(commands, d_o, CL_TRUE, 0, sizeof(float)*count, results, 0, NULL, NULL ),"aaaaaaa");  
 
-/* Print out result */
-	std::cout<<"Time step 1"<<std::endl;
-    for (int i = 0; i < global; ++i)
-    {
-    	std::cout<<"q["<<i<<"]"<<" = "<<results[i]<<std::endl;
-    }
+		/* Print out result */
+	    for (int i = 0; i < global; ++i)
+	    {
+	    	std::cout<<"q["<<i<<"]"<<" = "<<results[i]<<std::endl;
+	    }
 
-
-/* Launch kernel */
-	//CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, NULL),"");
-	CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL),"111");
-
-/* Read ouput array */
-    CheckError(clEnqueueReadBuffer(commands, d_o, CL_TRUE, 0, sizeof(float)*count, results, 0, NULL, NULL ),"aaaaaaa");  
-
-/* Print out result */
-	std::cout<<"Time step 1"<<std::endl;
-    for (int i = 0; i < global; ++i)
-    {
-    	std::cout<<"q["<<i<<"]"<<" = "<<results[i]<<std::endl;
-    }
+	}
 
     
     clReleaseMemObject(d_u);
