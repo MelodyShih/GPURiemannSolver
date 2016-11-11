@@ -7,7 +7,7 @@
 
 #include "OpenCL/opencl.h"
 
-#define DATA_SIZE (16)
+#define DATA_SIZE (8)
 
 void CheckError (cl_int err, std::string message)
 {
@@ -22,8 +22,6 @@ std::string LoadKernel (const char* name)
 {
 	std::ifstream in(name);
 	std::string result ((std::istreambuf_iterator<char> (in)),std::istreambuf_iterator<char> ());
-	
-	// std::cout<<result<<std::endl;
 	
 	return result;
 }
@@ -88,7 +86,8 @@ int main(int argc, char const *argv[])
 	}
 /* Get Device */
 	cl_uint deviceIdCount = 0;
-	clGetDeviceIDs (platformIds [0], CL_DEVICE_TYPE_ALL, 0, nullptr,
+
+	clGetDeviceIDs (platformIds [0], CL_DEVICE_TYPE_GPU, 0, nullptr,
 		&deviceIdCount);
 
 	if (deviceIdCount == 0) {
@@ -99,8 +98,7 @@ int main(int argc, char const *argv[])
 	}
 
 	std::vector<cl_device_id> deviceIds (deviceIdCount);
-	clGetDeviceIDs (platformIds [0], CL_DEVICE_TYPE_ALL, deviceIdCount,
-		deviceIds.data (), nullptr);
+	clGetDeviceIDs (platformIds[0], CL_DEVICE_TYPE_GPU, deviceIdCount, deviceIds.data (), nullptr);
 
 	for (cl_uint i = 0; i < deviceIdCount; ++i) {
 		std::cout << "\t (" << (i+1) << ") : " << GetDeviceName (deviceIds [i]) << std::endl;
@@ -116,16 +114,14 @@ int main(int argc, char const *argv[])
 	cl_int err = CL_SUCCESS;
 	cl_context context = clCreateContext (contextProperties, deviceIdCount,
 		                                  deviceIds.data (), nullptr, nullptr, &err);
-	CheckError (err, "fail to create context");
+	CheckError(err, "fail to create context");
 
-
-/* --------------------------------------------------------------------------------------------*/
-//																							   //
-//                          I can start programming here                                       //
-//																							   //
-/* --------------------------------------------------------------------------------------------*/
+/* Create commands */
+    cl_command_queue commands = clCreateCommandQueue (context, deviceIds[0], 0, &err);
+    CheckError(err, "failed to creat commands");
 
 /* Create program from source */
+    //err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
 	cl_program program = CreateProgram(LoadKernel ("Kernel/qinit.cl"), context);
 
 	err = clBuildProgram(program, deviceIdCount, deviceIds.data(), NULL, NULL, NULL);
@@ -135,7 +131,7 @@ int main(int argc, char const *argv[])
         char buffer[2048];
 
         printf("Error: Failed to build program executable!\n");
-        clGetProgramBuildInfo(program, deviceIds[0], CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+		clGetProgramBuildInfo(program, deviceIds[0], CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
         printf("%s\n", buffer);
         exit(1);
     }
@@ -148,12 +144,13 @@ int main(int argc, char const *argv[])
     int meqn = 2;
 	int mx = DATA_SIZE, mbc = 2;
 	int count = mx + 2*mbc;
-	double p[count], u[count];
-	double results[count];
+	float p[count], u[count];
+	float results[count];
 
-    std::size_t global = count;
-    std::size_t local;
+    std::size_t global=count;
+    std::size_t local =count;
 
+    std::cout<<"global = "<<global<<";local = "<<local<<std::endl;
 /* Initialize data */
 	for(int i = 0; i < count; i++){
         if(i == 2){
@@ -170,9 +167,9 @@ int main(int argc, char const *argv[])
 	cl_mem d_p, d_u;                 // device memory used for the input array
     cl_mem d_o;                      // device memory used for the output array
 
-	d_p  = clCreateBuffer(context, CL_MEM_READ_ONLY,  sizeof(double)*count, NULL, NULL);
-	d_u  = clCreateBuffer(context, CL_MEM_READ_ONLY,  sizeof(double)*count, NULL, NULL);
-    d_o  = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(double)*count, NULL, NULL);
+	d_p  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*count, NULL, NULL);
+	d_u  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*count, NULL, NULL);
+    d_o  = clCreateBuffer(context, CL_MEM_WRITE_ONLY,  sizeof(float)*count, NULL, NULL);
 
     if (!d_p || !d_o || !d_u)
     {
@@ -180,13 +177,11 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-/* Create commands */
-    cl_command_queue commands = clCreateCommandQueue (context, deviceIds[0], 0, &err);
-    CheckError(err, "");
+
 
 /* Write data set into the input array in device memory */
-    CheckError(clEnqueueWriteBuffer(commands, d_p, CL_TRUE, 0, sizeof(double)*count, p, 0, NULL, NULL), "write data");
-    CheckError(clEnqueueWriteBuffer(commands, d_u, CL_TRUE, 0, sizeof(double)*count, u, 0, NULL, NULL), "write data");
+    CheckError(clEnqueueWriteBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*count, p, 0, NULL, NULL), "write data");
+    CheckError(clEnqueueWriteBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*count, u, 0, NULL, NULL), "write data");
 
 /* Set kernel arguments */
     CheckError(clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_p), "set kernel arg");
@@ -195,34 +190,46 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(kernel, 3, sizeof(int)   , &count), "set kernel arg");
 
 /* Retrieve kernel work group info */
-    CheckError(clGetKernelWorkGroupInfo(kernel, deviceIds[0], CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL), 
-    	       "Retrieve work group info");
-    std::cout<<local<<std::endl;
+    // CheckError(clGetKernelWorkGroupInfo(kernel, deviceIds[0], CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL), 
+    // 	       "Retrieve work group info");
 
 /* Launch kernel */
-	CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, NULL),"");
-	//CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL),"");
+	//CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, NULL),"");
+	CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL),"111");
 
 /* Read ouput array */
-    CheckError(clEnqueueReadBuffer(commands, d_o, CL_TRUE, 0, sizeof(double)*count, results, 0, NULL, NULL ),"");  
+    CheckError(clEnqueueReadBuffer(commands, d_o, CL_TRUE, 0, sizeof(float)*count, results, 0, NULL, NULL ),"aaaaaaa");  
 
 /* Print out result */
-    for (int i = 0; i < count; ++i)
+	std::cout<<"Time step 1"<<std::endl;
+    for (int i = 0; i < global; ++i)
     {
     	std::cout<<"q["<<i<<"]"<<" = "<<results[i]<<std::endl;
     }
 
-    // ofstream myfile;
-    // myfile.open ("fort.q0000");
-    // myfile << "Writing this to a file.\n";
 
+/* Launch kernel */
+	//CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, NULL, 0, NULL, NULL),"");
+	CheckError(clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL),"111");
 
+/* Read ouput array */
+    CheckError(clEnqueueReadBuffer(commands, d_o, CL_TRUE, 0, sizeof(float)*count, results, 0, NULL, NULL ),"aaaaaaa");  
+
+/* Print out result */
+	std::cout<<"Time step 1"<<std::endl;
+    for (int i = 0; i < global; ++i)
+    {
+    	std::cout<<"q["<<i<<"]"<<" = "<<results[i]<<std::endl;
+    }
+
+    
     clReleaseMemObject(d_u);
     clReleaseMemObject(d_p);
     clReleaseMemObject(d_o);
-    clReleaseProgram(program);
+
+    clReleaseCommandQueue (commands);
     clReleaseKernel(kernel);
-    clReleaseCommandQueue(commands);
+    clReleaseProgram(program);
     clReleaseContext(context);
 
 	return 0;
