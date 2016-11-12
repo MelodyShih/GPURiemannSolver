@@ -1,3 +1,3 @@
-This is an implementation of Finite Volume Method for 1d advection equation. 
+E4302 Methods in Computational Science Term Project 
 
-Use setrun.py from clawpack/classic to create claw.data to set solver's parameters.
+Implementation of finite volume methods for linear acoustic equation on GPU
