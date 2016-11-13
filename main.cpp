@@ -80,11 +80,17 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(k_qinit, 3, sizeof(int)   , &mbc));
 
     CheckError(clEnqueueNDRangeKernel(commands, k_qinit, 1, NULL, &global, &local, 0, NULL, NULL));
+
 	CheckError(clEnqueueReadBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL ));  
 	CheckError(clEnqueueReadBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL ));
 
+	for (int i = 0; i < mtot; ++i)
+	{
+	    	std::cout<<"p["<<i<<"] = "<<p[i]<<std::endl;
+	}
 	out1(meqn, mbc, mx, xlower, dx, p, u, 0.0, iframe, NULL, maux);
 	iframe++;
+	/* Periodic BC */
 
 	/* ADVANCE SOLUTION */
     CheckError(clSetKernelArg(k_acoustic_1d, 0, sizeof(cl_mem), &d_p));
@@ -93,7 +99,7 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(k_acoustic_1d, 3, sizeof(int)   , &mbc));
 
 	/* Launch kernel */
-	for (int j = 0; j < 5; ++j)
+	for (int j = 0; j < 20; ++j)
 	{
 		t = t + dt;
 		CheckError(clEnqueueNDRangeKernel(commands, k_acoustic_1d, 1, NULL, &global, &local, 0, NULL, NULL));
@@ -101,7 +107,11 @@ int main(int argc, char const *argv[])
 		/* Read ouput array */
 	    CheckError(clEnqueueReadBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL ));  
 	    CheckError(clEnqueueReadBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL ));
-
+	    std::cout<<std::endl;
+	    for (int i = 0; i < mtot; ++i)
+	    {
+	    	std::cout<<"p["<<i<<"] = "<<p[i]<<std::endl;
+	    }
 	    out1(meqn, mbc, mx, xlower, dx, p, u, t, iframe, NULL, maux);
 	    iframe++;
 	}

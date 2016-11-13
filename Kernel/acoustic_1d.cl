@@ -51,5 +51,23 @@ __kernel void acoustic_1d(__global float* d_p,
         d_p[i] = p;
         d_u[i] = u;
     }
+
+    barrier(CLK_GLOBAL_MEM_FENCE);
+    if( i == 0 ){
+        d_p[i] = d_p[mx + mbc - 2];
+        d_u[i] = d_u[mx + mbc - 2];
+    }
+    if( i == 1 ){
+        d_p[i] = d_p[mx + mbc - 1];
+        d_u[i] = d_u[mx + mbc - 1];
+    }
+    if( i == mx + 2*mbc-1 ){
+        d_p[i] = d_p[mbc + 1];
+        d_u[i] = d_u[mbc + 1];
+    }
+    if( i == mx + 2*mbc-2 ){
+        d_p[i] = d_p[mbc];
+        d_u[i] = d_u[mbc];
+    }
     // d_o[i] = d_p[i];
 }
