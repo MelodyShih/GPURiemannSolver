@@ -5,8 +5,8 @@ __kernel void qinit(__global float* d_p,
 
 	d_p[i] = 0;
 	d_u[i] = 0;
-	if( i == 2){
-		d_p[i] = 2;
-		d_u[i] = 1;
+	if( i == mbc ){
+		d_p[i] = 0.4;
+		d_u[i] = 0.2;
 	}
 }

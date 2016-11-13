@@ -110,3 +110,32 @@ void ProgramErrMsg(cl_program program, cl_device_id device){
     printf("%s\n", buffer);
     exit(1);
 }
+
+/*output q data as the format in clawpack */
+void out1(int meqn, int mbc, int mx, float xlower, float dx, float* p, float* u, 
+	      float t, int iframe, float* aux, int maux){
+	char filename[40];
+	FILE *pFile;
+	sprintf(filename,"Result/_output/fort.q%04d",iframe);
+    pFile = fopen (filename,"w");
+    fprintf(pFile, "%5d                 grid_number\n", 1);
+    fprintf(pFile, "%5d                 AMR_level\n", 1);
+    fprintf(pFile, "%5d                 mx\n",mx);
+    fprintf(pFile, "%18.8E    xlow\n",xlower);
+    fprintf(pFile, "%18.8E    dx\n\n",dx);
+    for (int i = mbc; i < mx + mbc; ++i)
+    {
+    	fprintf (pFile, "%26.16E%26.16E\n", p[i], u[i]);
+    }
+	fclose (pFile);
+
+	sprintf(filename,"Result/_output/fort.t%04d",iframe);
+	pFile = fopen (filename,"w");
+    fprintf(pFile, "%26.16E    time\n",t);
+    fprintf(pFile, "%5d                 meqn\n", meqn);
+    fprintf(pFile, "%5d                 ngrids\n",1);
+    fprintf(pFile, "%5d                 maux\n",maux);
+    fprintf(pFile, "%5d                 ndim\n",1);
+
+	fclose (pFile);
+}

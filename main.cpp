@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <cassert>
+#include <fstream>
 
 #include "OpenCL/opencl.h"
 #include "helper.h"
@@ -20,8 +21,16 @@ int main(int argc, char const *argv[])
 
 	/* Data for pde solver */
     int meqn = 2;
-	int mx = 8, mbc = 2;
+    int ndim = 1;
+    int maux = 0;
+	int mx = 10, mbc = 2;
 	int mtot = mx + 2*mbc;
+	int iframe = 0;
+	float xlower = 0.0;
+	float xupper = 1.0;
+	float dx = (xupper - xlower)/mx;
+	float t = 0;
+	float dt = 0.05;
 	float p[mtot], u[mtot];
 
     std::size_t global=mtot;
@@ -54,18 +63,6 @@ int main(int argc, char const *argv[])
 	k_qinit = clCreateKernel(p_qinit, "qinit", &err);
 	CheckError(err);
 
-	/* Initialize data */
-	for(int i = 0; i < mtot; i++){
-        if(i == 5){
-        	p[i] = 2;
-        	u[i] = 1;
-		}
-		else{
-			p[i] = 0;
-			u[i] = 0;
-		}
-	}
-
 	/* Allocate device memory */
 	d_p  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
 	d_u  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
@@ -86,11 +83,8 @@ int main(int argc, char const *argv[])
 	CheckError(clEnqueueReadBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL ));  
 	CheckError(clEnqueueReadBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL ));
 
-	/* OUT */
-	for (int i = 0; i < global; ++i)
-	{
-	    std::cout<<"p["<<i<<"]"<<" = "<<p[i]<<", u["<<i<<"]="<<u[i]<<std::endl;
-	}
+	out1(meqn, mbc, mx, xlower, dx, p, u, 0.0, iframe, NULL, maux);
+	iframe++;
 
 	/* ADVANCE SOLUTION */
     CheckError(clSetKernelArg(k_acoustic_1d, 0, sizeof(cl_mem), &d_p));
@@ -101,19 +95,15 @@ int main(int argc, char const *argv[])
 	/* Launch kernel */
 	for (int j = 0; j < 5; ++j)
 	{
-		std::cout<<std::endl<<"Time Step = "<<j<<std::endl;
+		t = t + dt;
 		CheckError(clEnqueueNDRangeKernel(commands, k_acoustic_1d, 1, NULL, &global, &local, 0, NULL, NULL));
 
 		/* Read ouput array */
 	    CheckError(clEnqueueReadBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL ));  
 	    CheckError(clEnqueueReadBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL ));
 
-		/* Print out result */
-	    for (int i = 0; i < global; ++i)
-	    {
-	    	std::cout<<"p["<<i<<"]"<<" = "<<p[i]<<", u["<<i<<"]="<<u[i]<<std::endl;
-	    }
-
+	    out1(meqn, mbc, mx, xlower, dx, p, u, t, iframe, NULL, maux);
+	    iframe++;
 	}
     
     clReleaseMemObject(d_u);
