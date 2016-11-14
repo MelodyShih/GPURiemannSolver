@@ -13,7 +13,8 @@ __kernel void acoustic_1d(__global float* d_p,
         /* problem data */
         float rho = 1.0, K = 4.0;
         float cc = sqrt(K/rho), zz = cc*rho;
-        float dt = 0.05, dx = 0.1;
+        float dx = 0.02;
+        float dt = 0.02/cc;
         
         /* left riemann problem */
         float delta[2], a1, a2, wave1[2], wave2[2], s1, s2, amdq[2];
@@ -50,23 +51,5 @@ __kernel void acoustic_1d(__global float* d_p,
         
         d_p[i] = p;
         d_u[i] = u;
-    }
-
-    barrier(CLK_GLOBAL_MEM_FENCE);
-    if( i == 0 ){
-        d_p[i] = d_p[mx + mbc - 2];
-        d_u[i] = d_u[mx + mbc - 2];
-    }
-    if( i == 1 ){
-        d_p[i] = d_p[mx + mbc - 1];
-        d_u[i] = d_u[mx + mbc - 1];
-    }
-    if( i == mx + 2*mbc-1 ){
-        d_p[i] = d_p[mbc + 1];
-        d_u[i] = d_u[mbc + 1];
-    }
-    if( i == mx + 2*mbc-2 ){
-        d_p[i] = d_p[mbc];
-        d_u[i] = d_u[mbc];
     }
 }
