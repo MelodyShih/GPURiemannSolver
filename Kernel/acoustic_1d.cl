@@ -69,5 +69,4 @@ __kernel void acoustic_1d(__global float* d_p,
         d_p[i] = d_p[mbc];
         d_u[i] = d_u[mbc];
     }
-    // d_o[i] = d_p[i];
 }
