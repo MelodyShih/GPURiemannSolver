@@ -3,6 +3,7 @@ __kernel void bc1(__global float* d_p,
                   const int mx, const int mbc){
     int i = get_local_id(0);
     barrier(CLK_GLOBAL_MEM_FENCE);
+    
     /* Periodic BC */
     /* Left */
     if( i < mbc){

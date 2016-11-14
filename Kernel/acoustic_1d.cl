@@ -3,13 +3,13 @@ __kernel void acoustic_1d(__global float* d_p,
                           const int mx, const int mbc)
 {
     int i = get_local_id(0); 
+    barrier(CLK_GLOBAL_MEM_FENCE); 
     if (i < mx + mbc && i > mbc - 1)
     { 
         float p = d_p[i], u = d_u[i], 
               pl = d_p[i-1], ul = d_u[i-1], 
               pr = d_p[i+1], ur = d_u[i+1];
-
-        barrier(CLK_GLOBAL_MEM_FENCE);        
+       
         /* problem data */
         float rho = 1.0, K = 4.0;
         float cc = sqrt(K/rho), zz = cc*rho;
