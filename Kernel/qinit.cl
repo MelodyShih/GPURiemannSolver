@@ -18,6 +18,6 @@ __kernel void qinit(__global float* d_p,
     /* gaussian hump */ 
     i = i - mbc + 1;
     xcell = xlower + (i-0.5)*dx;
-    d_p[i] = exp(-beta * pow((xcell-0.3),2));
+    d_p[i] = exp(-beta * pow((xcell-0.0),2));
     d_u[i] = 0.0;
 }

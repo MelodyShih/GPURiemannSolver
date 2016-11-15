@@ -33,6 +33,19 @@ cl_program CreateProgram (const std::string& source, cl_context context)
     return program;
 }
 
+std::string GetPlatformName (cl_platform_id id)
+{
+    size_t size = 0;
+    clGetPlatformInfo (id, CL_PLATFORM_NAME, 0, nullptr, &size);
+
+    std::string result;
+    result.resize (size);
+    clGetPlatformInfo (id, CL_PLATFORM_NAME, size,
+        const_cast<char*> (result.data ()), nullptr);
+
+    return result;
+}
+
 cl_platform_id GetPlatform(int id){
     cl_uint platformIdCount = 0;
     clGetPlatformIDs (0, nullptr, &platformIdCount);
@@ -54,14 +67,14 @@ cl_platform_id GetPlatform(int id){
     return platformIds[id];
 }
 
-std::string GetPlatformName (cl_platform_id id)
+std::string GetDeviceName (cl_device_id id)
 {
     size_t size = 0;
-    clGetPlatformInfo (id, CL_PLATFORM_NAME, 0, nullptr, &size);
+    clGetDeviceInfo (id, CL_DEVICE_NAME, 0, nullptr, &size);
 
     std::string result;
     result.resize (size);
-    clGetPlatformInfo (id, CL_PLATFORM_NAME, size,
+    clGetDeviceInfo (id, CL_DEVICE_NAME, size,
         const_cast<char*> (result.data ()), nullptr);
 
     return result;
@@ -88,19 +101,6 @@ cl_device_id GetDevice(cl_platform_id platform, int id){
     return deviceIds[0];    
 }
 
-std::string GetDeviceName (cl_device_id id)
-{
-    size_t size = 0;
-    clGetDeviceInfo (id, CL_DEVICE_NAME, 0, nullptr, &size);
-
-    std::string result;
-    result.resize (size);
-    clGetDeviceInfo (id, CL_DEVICE_NAME, size,
-        const_cast<char*> (result.data ()), nullptr);
-
-    return result;
-}
-
 void ProgramErrMsg(cl_program program, cl_device_id device){
     size_t len;
     char buffer[2048];
@@ -116,7 +116,7 @@ void out1(int meqn, int mbc, int mx, float xlower, float dx, float* p, float* u,
     /*output q data as the format in clawpack */
     char filename[40];
     FILE *pFile;
-    sprintf(filename,"Result/_output/fort.q%04d",iframe);
+    sprintf(filename,"Output/_output/fort.q%04d",iframe);
     pFile = fopen (filename,"w");
     fprintf(pFile, "%5d                 grid_number\n", 1);
     fprintf(pFile, "%5d                 AMR_level\n", 1);
@@ -129,7 +129,7 @@ void out1(int meqn, int mbc, int mx, float xlower, float dx, float* p, float* u,
     }
     fclose (pFile);
 
-    sprintf(filename,"Result/_output/fort.t%04d",iframe);
+    sprintf(filename,"Output/_output/fort.t%04d",iframe);
     pFile = fopen (filename,"w");
     fprintf(pFile, "%26.16E    time\n",t);
     fprintf(pFile, "%5d                 meqn\n", meqn);
