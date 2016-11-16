@@ -19,21 +19,35 @@ int main(int argc, char const *argv[])
     cl_mem            d_p, d_u;
 
     /* Data for pde solver */
-    int meqn = 2;
+    int meqn = 3;
     int ndim = 1;
     int maux = 0;
     int mx = 100, mbc = 2;
     int mtot = mx + 2*mbc;
+    int nout = 10;
     int iframe = 0;
-    float xlower = -1.0;
+    
+    /* physical domain */
+    float xlower = 0.0;
     float xupper = 1.0;
     float dx = (xupper - xlower)/mx;
+    
+    /* time */
     float t = 0;
+    float t_final = 0.038;
     float dt = dx / 2;
-    float p[mtot], u[mtot];
+    
+    /* data */
+    float *q;
+
+    /* other */
+    float cflmax;
+    float cfldesire;
 
     std::size_t global=mtot;
     std::size_t local =mtot;
+
+    q = malloc(sizeof(float)*meqn*mtot);
 
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
@@ -142,8 +156,10 @@ int main(int argc, char const *argv[])
     clReleaseMemObject(d_p);
     clReleaseCommandQueue (commands);
     clReleaseKernel(k_acoustic_1d);
+    clReleaseKernel(k_bc1);
     clReleaseKernel(k_qinit);
     clReleaseProgram(p_acoustic_1d);
+    clReleaseProgram(p_bc1);
     clReleaseProgram(p_qinit);
     clReleaseContext(context);
 
