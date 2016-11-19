@@ -20,7 +20,7 @@ int main(int argc, char const *argv[])
     cl_mem            d_q, d_q_old;
 
     /* Data for pde solver */
-    int meqn = 2;
+    int meqn = 2, mwaves = 2;
     int ndim = 1;
     int maux = 0;
     int mx = 10, mbc = 2;
@@ -116,13 +116,12 @@ int main(int argc, char const *argv[])
 
     // /* ADVANCE SOLUTION */
     CheckError(clSetKernelArg(k_acoustic_1d, 0, sizeof(cl_mem), &d_q));
-    CheckError(clSetKernelArg(k_acoustic_1d, 1, sizeof(int)   , &meqn));
-    CheckError(clSetKernelArg(k_acoustic_1d, 2, sizeof(int)   , &mx));
-    CheckError(clSetKernelArg(k_acoustic_1d, 3, sizeof(int)   , &mbc));
-    CheckError(clSetKernelArg(k_acoustic_1d, 4, sizeof(float) , &dt));
-    CheckError(clSetKernelArg(k_acoustic_1d, 5, sizeof(float) , &dx));
-    CheckError(clSetKernelArg(k_acoustic_1d, 6, sizeof(float) , &rho));
-    CheckError(clSetKernelArg(k_acoustic_1d, 7, sizeof(float) , &K));
+    CheckError(clSetKernelArg(k_acoustic_1d, 1, sizeof(int)   , &mx));
+    CheckError(clSetKernelArg(k_acoustic_1d, 2, sizeof(int)   , &mbc));
+    CheckError(clSetKernelArg(k_acoustic_1d, 3, sizeof(float) , &dt));
+    CheckError(clSetKernelArg(k_acoustic_1d, 4, sizeof(float) , &dx));
+    CheckError(clSetKernelArg(k_acoustic_1d, 5, sizeof(float) , &rho));
+    CheckError(clSetKernelArg(k_acoustic_1d, 6, sizeof(float) , &K));
 
 
     CheckError(clEnqueueNDRangeKernel(commands, k_qinit, 1, NULL, &global, &local, 0, NULL, NULL));
