@@ -16,38 +16,44 @@ int main(int argc, char const *argv[])
     cl_command_queue  commands;
     cl_program        p_acoustic_1d, p_qinit, p_bc1;
     cl_kernel         k_acoustic_1d, k_qinit, k_bc1;
-    cl_mem            d_p, d_u;
+    cl_mem            d_p, d_u, d_p_old, d_u_old;
 
     /* Data for pde solver */
-    int meqn = 3;
+    int meqn = 2;
     int ndim = 1;
     int maux = 0;
-    int mx = 100, mbc = 2;
+    int mx = 10, mbc = 2;
     int mtot = mx + 2*mbc;
     int nout = 10;
     int iframe = 0;
     
     /* physical domain */
-    float xlower = 0.0;
+    float xlower = -1.0;
     float xupper = 1.0;
     float dx = (xupper - xlower)/mx;
     
     /* time */
+    int maxtimestep = 200;
     float t = 0;
+    float t_old;
+    float t_start = 0;
     float t_final = 0.038;
     float dt = dx / 2;
+    float dtmax = 0.1;
+    float dtmin = 0;
     
     /* data */
-    float *q;
+    float p[mtot], u[mtot];
 
+    /* problem data */
+    float K = 4.0, rho = 1.0;
     /* other */
-    float cflmax;
-    float cfldesire;
+    float cfl = 1;
+    float cflmax = 1;
+    float cfldesire = 0.9;
 
     std::size_t global=mtot;
     std::size_t local =mtot;
-
-    q = malloc(sizeof(float)*meqn*mtot);
 
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
@@ -86,15 +92,17 @@ int main(int argc, char const *argv[])
     CheckError(err);
 
     /* Allocate device memory */
-    d_p  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
-    d_u  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
+    d_p      = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
+    d_u      = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
+    d_p_old  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
+    d_u_old  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot, NULL, NULL);
+
     assert(d_p != 0);
     assert(d_u != 0);
+    assert(d_p_old != 0);
+    assert(d_u_old != 0);
 
-    /* Write data set into the input array in device memory */
-    CheckError(clEnqueueWriteBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL));
-    CheckError(clEnqueueWriteBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL));
-
+    /* Set arguments */
     /* QINIT */
     CheckError(clSetKernelArg(k_qinit, 0, sizeof(cl_mem), &d_p));
     CheckError(clSetKernelArg(k_qinit, 1, sizeof(cl_mem), &d_u));
@@ -114,13 +122,17 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(k_acoustic_1d, 1, sizeof(cl_mem), &d_u));
     CheckError(clSetKernelArg(k_acoustic_1d, 2, sizeof(int)   , &mx));
     CheckError(clSetKernelArg(k_acoustic_1d, 3, sizeof(int)   , &mbc));
+    CheckError(clSetKernelArg(k_acoustic_1d, 4, sizeof(float) , &dt));
+    CheckError(clSetKernelArg(k_acoustic_1d, 5, sizeof(float) , &dx));
+    CheckError(clSetKernelArg(k_acoustic_1d, 6, sizeof(float) , &rho));
+    CheckError(clSetKernelArg(k_acoustic_1d, 7, sizeof(float) , &K));
+
 
     CheckError(clEnqueueNDRangeKernel(commands, k_qinit, 1, NULL, &global, &local, 0, NULL, NULL));
-    CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
 
     CheckError(clEnqueueReadBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL ));  
     CheckError(clEnqueueReadBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL ));
-#if 0
+#if 1
     for (int i = 0; i < mtot; ++i)
     {
             std::cout<<"p["<<i<<"] = "<<p[i]<<std::endl;
@@ -129,19 +141,41 @@ int main(int argc, char const *argv[])
     out1(meqn, mbc, mx, xlower, dx, p, u, 0.0, iframe, NULL, maux);
     iframe++;
 
-
-
     /* Launch kernel */
-    for (int j = 0; j < 20; ++j)
+    for (int j = 0; j < 10; ++j)
     {
-        t = t + dt;
-        CheckError(clEnqueueNDRangeKernel(commands, k_acoustic_1d, 1, NULL, &global, &local, 0, NULL, NULL));
-        CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
+        t_old = t;
+        if (t_old+dt > t_final && t_start < t_final) 
+            dt = t_final - t_old;
+        t = t_old + dt;
+        clEnqueueCopyBuffer (commands, d_p, d_p_old, 0, 0, sizeof(float)*mtot, 0, NULL, NULL);
+        clEnqueueCopyBuffer (commands, d_u, d_u_old, 0, 0, sizeof(float)*mtot, 0, NULL, NULL);
 
+        CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
+        CheckError(clEnqueueNDRangeKernel(commands, k_acoustic_1d, 1, NULL, &global, &local, 0, NULL, NULL));
+        
+        /* Choose new time step if variable time step */
+        if (cfl > 0){
+            dt = std::min(dtmax, dt*cfldesire/cfl);
+            dtmin = std::min(dt,dtmin);
+            dtmax = std::max(dt,dtmax);
+        }else{
+            dt = dtmax;
+        }
+        
+        /* Check to see if the Courant number was too large */
+        if (cfl <= cflmax){
+            // Accept this step
+            cflmax = std::max(cfl, cflmax);
+        }else{
+            // Reject this step => Take a smaller step
+
+        }
+        
         /* Read ouput array */
         CheckError(clEnqueueReadBuffer(commands, d_p, CL_TRUE, 0, sizeof(float)*mtot, p, 0, NULL, NULL ));  
         CheckError(clEnqueueReadBuffer(commands, d_u, CL_TRUE, 0, sizeof(float)*mtot, u, 0, NULL, NULL ));
-#if 0
+#if 1
         std::cout<<std::endl;
         for (int i = 0; i < mtot; ++i)
         {

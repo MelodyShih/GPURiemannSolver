@@ -1,16 +1,16 @@
-__kernel void acoustic_1d(__global float* d_p, 
-                          __global float* d_u,
-                          const int mx, const int mbc, 
-                          const float dt_temp, const float dx, 
-                          const float rho, const float K)
+__kernel void rp1_acoustic(__global float* d_p, 
+                           __global float* d_u,
+                           __global float* apdq, 
+                           __global float* amdq,
+                           const int meqn, const int mx, const int mbc, 
+                           const float dt_temp, const float dx, 
+                           const float rho, const float K)
 {
     int i = get_local_id(0); 
-    barrier(CLK_GLOBAL_MEM_FENCE); 
     if (i < mx + mbc && i > mbc - 1)
     { 
-        float p = d_p[i], u = d_u[i], 
-              pl = d_p[i-1], ul = d_u[i-1], 
-              pr = d_p[i+1], ur = d_u[i+1];
+        float pl = d_p[i-1], ul = d_u[i-1], 
+              pr = d_p[i], ur = d_u[i];
        
         /* problem data */
         float cc = sqrt(K/rho), zz = cc*rho;
