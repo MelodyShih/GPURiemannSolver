@@ -1,6 +1,5 @@
-__kernel void acoustic_1d(__global float* d_p, 
-                          __global float* d_u,
-                          const int mx, const int mbc, 
+__kernel void acoustic_1d(__global float* d_q, 
+                          const int meqn, const int mx, const int mbc, 
                           const float dt_temp, const float dx, 
                           const float rho, const float K)
 {
@@ -8,9 +7,9 @@ __kernel void acoustic_1d(__global float* d_p,
     barrier(CLK_GLOBAL_MEM_FENCE); 
     if (i < mx + mbc && i > mbc - 1)
     { 
-        float p = d_p[i], u = d_u[i], 
-              pl = d_p[i-1], ul = d_u[i-1], 
-              pr = d_p[i+1], ur = d_u[i+1];
+        float p = d_q[meqn*i], u = d_q[meqn*i + 1], 
+              pl = d_q[meqn*(i-1)], ul = d_q[meqn*(i-1) + 1], 
+              pr = d_q[meqn*(i+1)], ur = d_q[meqn*(i+1) + 1];
        
         /* problem data */
         float cc = sqrt(K/rho), zz = cc*rho;
@@ -49,7 +48,7 @@ __kernel void acoustic_1d(__global float* d_p,
         p -= dt/dx*apdq[0];
         u -= dt/dx*apdq[1];
         
-        d_p[i] = p;
-        d_u[i] = u;
+        d_q[meqn*i] = p;
+        d_q[meqn*i + 1] = u;
     }
 }

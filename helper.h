@@ -111,7 +111,7 @@ void ProgramErrMsg(cl_program program, cl_device_id device){
     exit(1);
 }
 
-void out1(int meqn, int mbc, int mx, float xlower, float dx, float* p, float* u, 
+void out1(int meqn, int mbc, int mx, float xlower, float dx, float* q,
           float t, int iframe, float* aux, int maux){
     /*output q data as the format in clawpack */
     char filename[40];
@@ -125,7 +125,11 @@ void out1(int meqn, int mbc, int mx, float xlower, float dx, float* p, float* u,
     fprintf(pFile, "%18.8E    dx\n\n",dx);
     for (int i = mbc; i < mx + mbc; ++i)
     {
-        fprintf (pFile, "%26.16E%26.16E\n", p[i], u[i]);
+        for (int m = 0; m < meqn; ++m)
+        {
+            fprintf (pFile, "%26.16E", q[meqn*i + m]);
+        }
+        fprintf (pFile, "\n");
     }
     fclose (pFile);
 
