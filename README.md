@@ -1,4 +1,4 @@
-#E4302 Methods in Computational Science Term Project 
+##E4302 Methods in Computational Science
 
 ##GPU acceleration of riemann solver
 
