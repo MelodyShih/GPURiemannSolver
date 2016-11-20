@@ -46,6 +46,8 @@ int main(int argc, char const *argv[])
     float dt = dx / 2;
     float dtmax = 0.1;
     float dtmin = 0;
+    float dtout = t_final/nout;
+    float tout = 0;
     
     /* data */
     float q[meqn*mtot];
@@ -145,26 +147,25 @@ int main(int argc, char const *argv[])
     /* Launch kernel */
     for (int j = 0; j < 10; ++j)
     {
-        // t_old = t;
-        // if (t_old+dt > t_final && t_start < t_final) 
-        //     dt = t_final - t_old;
-        // t = t_old + dt;
-        t = t + dt;
+        t_old = t;
+        if (t_old+dt > t_final && t_start < t_final) 
+            dt = t_final - t_old;
+        t = t_old + dt;
         clEnqueueCopyBuffer (commands, d_q, d_q_old, 0, 0, sizeof(float)*mtot*meqn, 0, NULL, NULL);
 
         CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
         CheckError(clEnqueueNDRangeKernel(commands, k_acoustic_1d, 1, NULL, &global, &local, 0, NULL, NULL));
         
-        // /* Choose new time step if variable time step */
-        // if (cfl > 0){
-        //     dt = std::min(dtmax, dt*cfldesire/cfl);
-        //     dtmin = std::min(dt,dtmin);
-        //     dtmax = std::max(dt,dtmax);
-        // }else{
-        //     dt = dtmax;
-        // }
+        /* Choose new time step if variable time step */
+        if (cfl > 0){
+            dt = std::min(dtmax, dt*cfldesire/cfl);
+            dtmin = std::min(dt,dtmin);
+            dtmax = std::max(dt,dtmax);
+        }else{
+            dt = dtmax;
+        }
         
-        // /* Check to see if the Courant number was too large */
+        /* Check to see if the Courant number was too large */
         // if (cfl <= cflmax){
         //     // Accept this step
         //     cflmax = std::max(cfl, cflmax);
@@ -183,8 +184,12 @@ int main(int argc, char const *argv[])
                          <<",  u["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i+1]<<std::endl;
         }
 #endif
-        out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux);
-        iframe++;
+        if (t > tout)
+        {
+            out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux);
+            iframe++;
+            tout += dtout;
+        }
     }
     
     clReleaseMemObject(d_q);

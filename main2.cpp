@@ -29,9 +29,9 @@ int main(int argc, char const *argv[])
     int meqn = 2, mwaves = 2;
     int ndim = 1;
     int maux = 0;
-    int mx = 100, mbc = 2;
+    int mx = 200, mbc = 2;
     int mtot = mx + 2*mbc;
-    int nout = 10;
+    int nout = 16;
     int iframe = 0;
     
     /* physical domain */
@@ -40,12 +40,14 @@ int main(int argc, char const *argv[])
     float dx = (xupper - xlower)/mx;
     
     /* time */
-    int maxtimestep = 50;
+    int maxtimestep = 2000;
     float t = 0;
     float t_old;
-    float t_start = 0, t_final = 1.0;
+    float t_start = 0, t_final = 2.0;
     float dt = dx / 2;
     float dtmax = 1.0, dtmin = 0.0;
+    float dtout = t_final/nout;
+    float tout = 0;
     
     /* data */
     float q[meqn*mtot];
@@ -57,7 +59,7 @@ int main(int argc, char const *argv[])
     /* other */
     float cfl = 1;
     float cflmax = 1;
-    float cfldesire = 1;
+    float cfldesire = 0.9;
 
     std::size_t global=mtot;
     std::size_t local =mtot/2;
@@ -180,6 +182,7 @@ int main(int argc, char const *argv[])
     out1(meqn, mbc, mx, xlower, dx, q, 0.0, iframe, NULL, maux);
     iframe++;
 
+    tout += dtout;
     /* Launch kernel */
     for (int j = 0; j < maxtimestep; ++j)
     {
@@ -196,11 +199,11 @@ int main(int argc, char const *argv[])
         CheckError(clEnqueueNDRangeKernel(commands, k_calc_cfl, 1, NULL, &global, &local, 0, NULL, NULL));
         
         CheckError(clEnqueueReadBuffer(commands, d_cfl, CL_TRUE, 0, sizeof(float), &cfl, 0, NULL, NULL));
-        printf("cfl = %f\n", cfl);
+        //printf("cfl = %f\n", cfl);
         /* Choose new time step if variable time step */
         if (cfl > 0){
             dt = std::min(dtmax, dt*cfldesire/cfl);
-            printf("dt = %f\n", dt);
+            //printf("dt = %f\n", dt);
             // dtmin = std::min(dt,dtmin);
             // dtmax = std::max(dt,dtmax);
         }else{
@@ -222,14 +225,18 @@ int main(int argc, char const *argv[])
         CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL));
 #if output
         std::cout<<std::endl;
-        for (int i = mbc; i < mtot - mbc; ++i)
+        for (int i = 0; i < mtot ; ++i)
         {
             std::cout<<"p["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i]
                      <<",  u["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i+1]<<std::endl;
         }
 #endif
-        out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux);
-        iframe++;
+        if (t > tout)
+        {
+            out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux);
+            iframe++;
+            tout += dtout;
+        }
     }
 
     clReleaseMemObject(d_q);
