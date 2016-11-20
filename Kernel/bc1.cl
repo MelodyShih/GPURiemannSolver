@@ -1,6 +1,6 @@
 __kernel void bc1(__global float* d_q, 
                   const int meqn, const int mx, const int mbc){
-    int i = get_local_id(0);
+    int i = get_global_id(0);
     /* Periodic BC */
     /* Left */
     if( i < mbc){
