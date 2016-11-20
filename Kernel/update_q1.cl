@@ -4,7 +4,7 @@ __kernel void update_q1(__global float* d_q,
                         const int meqn, const int mx, const int mbc, 
                         const float dx, const float dt)
 {
-	int i = get_local_id(0); 
+	int i = get_global_id(0); 
     if (i < mx + mbc && i > mbc - 1)
     {
     	for(int m=0; m<meqn; m++){

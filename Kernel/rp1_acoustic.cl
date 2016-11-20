@@ -1,12 +1,12 @@
 __kernel void rp1_acoustic(__global float* d_q, 
                            __global float* d_apdq, 
                            __global float* d_amdq,
-                           __global float* s,
+                           __global float* d_s,
                            const int mx, const int mbc, 
                            const float rho, const float K)
 {
     /* Input: q, Output: d_apdq, d_amdq*/
-    int i = get_local_id(0); 
+    int i = get_global_id(0); 
     if (i < mx + mbc + 1 && i > mbc - 1)
     {
         /* Solve riemann problem from "ith" cell boundary 
@@ -37,5 +37,7 @@ __kernel void rp1_acoustic(__global float* d_q,
 
         d_apdq[2*i]   = s2*wave2[0];
         d_apdq[2*i+1] = s2*wave2[1];
+
+        d_s[i - mbc] = max(-s1, s2);
     }
 }

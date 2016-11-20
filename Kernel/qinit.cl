@@ -10,8 +10,8 @@ __kernel void qinit(__global float* d_q,
         d_q[meqn*i] = 0;
         d_q[meqn*i+m] = 0;
         if( i == 2 ){
-            d_q[meqn*i] = 0.4;
-            d_q[meqn*i+m] = 0.2;
+            d_q[meqn*i] = 4;
+            d_q[meqn*i+m] = 2;
         }
     }
 

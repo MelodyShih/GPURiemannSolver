@@ -19,9 +19,11 @@ int main(int argc, char const *argv[])
     cl_device_id      device = GetDevice(platform, 0);
     cl_context        context;
     cl_command_queue  commands;
-    cl_program        p_rp1_acoustic, p_qinit, p_bc1, p_update_q1;
-    cl_kernel         k_rp1_acoustic, k_qinit, k_bc1, k_update_q1;
-    cl_mem            d_q, d_q_old, d_apdq, d_amdq, d_s;
+    cl_program        p_rp1_acoustic, p_qinit, p_bc1, 
+                      p_update_q1, p_calc_cfl;
+    cl_kernel         k_rp1_acoustic, k_qinit, k_bc1, 
+                      k_update_q1, k_calc_cfl;
+    cl_mem            d_q, d_q_old, d_apdq, d_amdq, d_s, d_cfl;
 
     /* Data for pde solver */
     int meqn = 2, mwaves = 2;
@@ -38,15 +40,16 @@ int main(int argc, char const *argv[])
     float dx = (xupper - xlower)/mx;
     
     /* time */
-    int maxtimestep = 200;
+    int maxtimestep = 50;
     float t = 0;
     float t_old;
-    float t_start = 0, t_final = 0.038;
+    float t_start = 0, t_final = 2.0;
     float dt = dx / 2;
-    float dtmax = 0.1, dtmin = 0.0;
+    float dtmax = 1.0, dtmin = 0.0;
     
     /* data */
     float q[meqn*mtot];
+    float s[mx+1];
 
     /* problem data */
     float K = 4.0, rho = 1.0;
@@ -54,7 +57,7 @@ int main(int argc, char const *argv[])
     /* other */
     float cfl = 1;
     float cflmax = 1;
-    float cfldesire = 0.9;
+    float cfldesire = 1;
 
     std::size_t global=mtot;
     std::size_t local =mtot;
@@ -84,6 +87,14 @@ int main(int argc, char const *argv[])
     }
     k_update_q1 = clCreateKernel(p_update_q1, "update_q1", &err);
 
+    p_calc_cfl = CreateProgram(LoadKernel ("Kernel/calc_cfl.cl"), context);
+    err     = clBuildProgram(p_calc_cfl, 1, &device, NULL, NULL, NULL);
+    if (err != CL_SUCCESS)
+    {
+        ProgramErrMsg(p_calc_cfl, device);
+    }
+    k_calc_cfl = clCreateKernel(p_calc_cfl, "calc_cfl", &err);
+
 
     p_qinit = CreateProgram(LoadKernel ("Kernel/qinit.cl"), context);
     err     = clBuildProgram(p_qinit, 1, &device, NULL, NULL, NULL);
@@ -109,6 +120,7 @@ int main(int argc, char const *argv[])
     d_apdq   = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*meqn*mtot, NULL, NULL);
     d_amdq   = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*meqn*mtot, NULL, NULL);
     d_s      = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*(mx+1)   , NULL, NULL);
+    d_cfl    = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)          , NULL, NULL);
 
     assert(d_q != 0);
     assert(d_q_old != 0);
@@ -148,6 +160,13 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(k_update_q1, 6, sizeof(float) , &dx));
     CheckError(clSetKernelArg(k_update_q1, 7, sizeof(float) , &dt));
 
+    /* Calculate cfl */ 
+    CheckError(clSetKernelArg(k_calc_cfl, 0, sizeof(cl_mem), &d_s));
+    CheckError(clSetKernelArg(k_calc_cfl, 1, sizeof(cl_mem), &d_cfl));
+    CheckError(clSetKernelArg(k_calc_cfl, 2, sizeof(float) , &dx));
+    CheckError(clSetKernelArg(k_calc_cfl, 3, sizeof(float) , &dt));
+    CheckError(clSetKernelArg(k_calc_cfl, 4, sizeof(int), &mx));
+
     CheckError(clEnqueueNDRangeKernel(commands, k_qinit, 1, NULL, &global, &local, 0, NULL, NULL));
     CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL ));  
 #if output
@@ -162,23 +181,51 @@ int main(int argc, char const *argv[])
     iframe++;
 
     /* Launch kernel */
-    for (int j = 0; j < 10; ++j)
+    for (int j = 0; j < maxtimestep; ++j)
     {
-        t = t + dt;
+        t_old = t;
+        if (t_old+dt > t_final && t_start < t_final) 
+            dt = t_final - t_old;
+        t = t_old + dt;
+        printf("t = %f, dt = %f\n", t, dt);
         clEnqueueCopyBuffer (commands, d_q, d_q_old, 0, 0, sizeof(float)*mtot*meqn, 0, NULL, NULL);
 
         CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
         CheckError(clEnqueueNDRangeKernel(commands, k_rp1_acoustic, 1, NULL, &global, &local, 0, NULL, NULL));
         CheckError(clEnqueueNDRangeKernel(commands, k_update_q1, 1, NULL, &global, &local, 0, NULL, NULL));
+        CheckError(clEnqueueNDRangeKernel(commands, k_calc_cfl, 1, NULL, &global, &local, 0, NULL, NULL));
         
+        CheckError(clEnqueueReadBuffer(commands, d_cfl, CL_TRUE, 0, sizeof(float), &cfl, 0, NULL, NULL));
+        printf("cfl = %f\n", cfl);
+        /* Choose new time step if variable time step */
+        if (cfl > 0){
+            dt = std::min(dtmax, dt*cfldesire/cfl);
+            printf("dt = %f\n", dt);
+            // dtmin = std::min(dt,dtmin);
+            // dtmax = std::max(dt,dtmax);
+        }else{
+            dt = dtmax;
+        }
+        CheckError(clSetKernelArg(k_update_q1, 7, sizeof(float) , &dt));
+        CheckError(clSetKernelArg(k_calc_cfl, 3, sizeof(float) , &dt));
+        // /* Check to see if the Courant number was too large */
+        // if (cfl <= cflmax){
+        //     // Accept this step
+        //     cflmax = std::max(cfl, cflmax);
+        // }else{
+        //     // Reject this step => Take a smaller step
+
+        // }
+        if (t >= t_final)    break;
+
         /* Read ouput array */
-        CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL));  
+        CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL));
 #if output
         std::cout<<std::endl;
         for (int i = mbc; i < mtot - mbc; ++i)
         {
-                std::cout<<"p["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i]
-                         <<",  u["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i+1]<<std::endl;
+            std::cout<<"p["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i]
+                     <<",  u["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i+1]<<std::endl;
         }
 #endif
         out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux);
@@ -195,11 +242,13 @@ int main(int argc, char const *argv[])
     clReleaseKernel(k_bc1);
     clReleaseKernel(k_qinit);
     clReleaseKernel(k_update_q1);
+    clReleaseKernel(k_calc_cfl);
 
     clReleaseProgram(p_rp1_acoustic);
     clReleaseProgram(p_bc1);
     clReleaseProgram(p_qinit);
     clReleaseProgram(p_update_q1);
+    clReleaseProgram(p_calc_cfl);
     clReleaseContext(context);
 
     return 0;
