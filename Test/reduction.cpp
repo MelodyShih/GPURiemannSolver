@@ -7,10 +7,6 @@
 #include "OpenCL/opencl.h"
 #include "../helper.h"
 
-#ifndef output
-#define output 0
-#endif
-
 int main(int argc, char const *argv[])
 {
     const char* version;
@@ -48,7 +44,6 @@ int main(int argc, char const *argv[])
     CheckError(err);
 
     /* Create program, kernel from source */
-
     p_get_max = CreateProgram(LoadKernel (version), context);
     err     = clBuildProgram(p_get_max, 1, &device, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
@@ -87,15 +82,6 @@ int main(int argc, char const *argv[])
             std::cout<<"data["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<data[i]<<std::endl;
         }
     }
-    // CheckError(clEnqueueReadBuffer(commands, d_data, CL_TRUE, 0, sizeof(float)*mtot, data, 0, NULL, NULL ));  
-    // CheckError(clEnqueueReadBuffer(commands, d_maxvalue, CL_TRUE, 0, sizeof(float), &max, 0, NULL, NULL ));
-#if output
-    std::cout<<"max = "<<data[0]<<std::endl;
-    for (int i = 0; i < mtot; ++i)
-    {
-            std::cout<<"data["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<data[i]<<std::endl;
-    }
-#endif
 
     clReleaseMemObject(d_data);
     clReleaseCommandQueue (commands);

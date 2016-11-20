@@ -20,49 +20,42 @@ int main(int argc, char const *argv[])
     cl_context        context;
     cl_command_queue  commands;
     cl_program        p_rp1_acoustic, p_qinit, p_bc1, 
-                      p_update_q1, p_calc_cfl;
+                      p_update_q1, p_max_speed;
     cl_kernel         k_rp1_acoustic, k_qinit, k_bc1, 
-                      k_update_q1, k_calc_cfl;
-    cl_mem            d_q, d_q_old, d_apdq, d_amdq, d_s, d_cfl;
+                      k_update_q1, k_max_speed;
+    cl_mem            d_q, d_q_old, d_apdq, d_amdq, d_s;
 
     /* Data for pde solver */
-    int meqn = 2, mwaves = 2;
+    int meqn = 2, mwaves = 2, maux = 0;
     int ndim = 1;
-    int maux = 0;
-    int mx = 200, mbc = 2;
-    int mtot = mx + 2*mbc;
+    int mx = 100, mbc = 2, mtot = mx + 2*mbc;
     int nout = 16;
     int iframe = 0;
     
     /* physical domain */
-    float xlower = -1.0;
-    float xupper = 1.0;
+    float xlower = -1.0, xupper = 1.0;
     float dx = (xupper - xlower)/mx;
     
     /* time */
-    int maxtimestep = 2000;
-    float t = 0;
-    float t_old;
-    float t_start = 0, t_final = 2.0;
-    float dt = dx / 2;
-    float dtmax = 1.0, dtmin = 0.0;
-    float dtout = t_final/nout;
-    float tout = 0;
+    int maxtimestep = 1000;
+    float t = 0, t_old;
+    float t_start = 0, t_final = 1.0;
+    float dt = dx/2, dtmax = 1.0, dtmin = 0.0;
+    float dtout = t_final/nout, tout = 0;
     
     /* data */
     float q[meqn*mtot];
-    float s[mx+1];
 
     /* problem data */
     float K = 4.0, rho = 1.0;
     
     /* other */
-    float cfl = 1;
-    float cflmax = 1;
-    float cfldesire = 0.9;
+    float cfl, cflmax = 1, cfldesire = 0.9;
 
-    std::size_t global=mtot;
-    std::size_t local =mtot/2;
+    std::size_t local    = mtot/2;
+    std::size_t numgroup = ((mtot - 1)/local + 1);
+    std::size_t global   = numgroup * local;
+    std::size_t l;
 
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
@@ -89,13 +82,13 @@ int main(int argc, char const *argv[])
     }
     k_update_q1 = clCreateKernel(p_update_q1, "update_q1", &err);
 
-    p_calc_cfl = CreateProgram(LoadKernel ("Kernel/calc_cfl.cl"), context);
-    err     = clBuildProgram(p_calc_cfl, 1, &device, NULL, NULL, NULL);
+    p_max_speed = CreateProgram(LoadKernel ("Kernel/max_speed.cl"), context);
+    err     = clBuildProgram(p_max_speed, 1, &device, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
-        ProgramErrMsg(p_calc_cfl, device);
+        ProgramErrMsg(p_max_speed, device);
     }
-    k_calc_cfl = clCreateKernel(p_calc_cfl, "calc_cfl", &err);
+    k_max_speed = clCreateKernel(p_max_speed, "max_speed", &err);
 
 
     p_qinit = CreateProgram(LoadKernel ("Kernel/qinit.cl"), context);
@@ -121,11 +114,7 @@ int main(int argc, char const *argv[])
     d_q_old  = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*meqn*mtot, NULL, NULL);
     d_apdq   = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*meqn*mtot, NULL, NULL);
     d_amdq   = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*meqn*mtot, NULL, NULL);
-    d_s      = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*(mx+1)   , NULL, NULL);
-    d_cfl    = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)          , NULL, NULL);
-
-    assert(d_q != 0);
-    assert(d_q_old != 0);
+    d_s      = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(float)*mtot     , NULL, NULL);
 
     /* Set arguments */
     /* QINIT */
@@ -163,14 +152,12 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(k_update_q1, 7, sizeof(float) , &dt));
 
     /* Calculate cfl */ 
-    CheckError(clSetKernelArg(k_calc_cfl, 0, sizeof(cl_mem), &d_s));
-    CheckError(clSetKernelArg(k_calc_cfl, 1, sizeof(cl_mem), &d_cfl));
-    CheckError(clSetKernelArg(k_calc_cfl, 2, sizeof(float) , &dx));
-    CheckError(clSetKernelArg(k_calc_cfl, 3, sizeof(float) , &dt));
-    CheckError(clSetKernelArg(k_calc_cfl, 4, sizeof(int), &mx));
+    CheckError(clSetKernelArg(k_max_speed, 0, sizeof(cl_mem), &d_s));
+    CheckError(clSetKernelArg(k_max_speed, 1, sizeof(float)*local, NULL));
 
     CheckError(clEnqueueNDRangeKernel(commands, k_qinit, 1, NULL, &global, &local, 0, NULL, NULL));
     CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL ));  
+
 #if output
     for (int i = 0; i < mtot; ++i)
     {
@@ -190,27 +177,32 @@ int main(int argc, char const *argv[])
         if (t_old+dt > t_final && t_start < t_final) 
             dt = t_final - t_old;
         t = t_old + dt;
-        printf("t = %f, dt = %f\n", t, dt);
         clEnqueueCopyBuffer (commands, d_q, d_q_old, 0, 0, sizeof(float)*mtot*meqn, 0, NULL, NULL);
 
         CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
         CheckError(clEnqueueNDRangeKernel(commands, k_rp1_acoustic, 1, NULL, &global, &local, 0, NULL, NULL));
         CheckError(clEnqueueNDRangeKernel(commands, k_update_q1, 1, NULL, &global, &local, 0, NULL, NULL));
-        CheckError(clEnqueueNDRangeKernel(commands, k_calc_cfl, 1, NULL, &global, &local, 0, NULL, NULL));
         
-        CheckError(clEnqueueReadBuffer(commands, d_cfl, CL_TRUE, 0, sizeof(float), &cfl, 0, NULL, NULL));
-        //printf("cfl = %f\n", cfl);
+        /* Get the maximum speed by recursively calling k_max_speed kernel */ 
+        l = local;
+        for (std::size_t length = global; length > 1; length = numgroup)
+        {
+            CheckError(clEnqueueNDRangeKernel(commands, k_max_speed, 1, NULL, &length, &l, 0, NULL, NULL));
+            numgroup = (length - 1)/l + 1;
+            if (numgroup < l) l = numgroup;
+        }
+        CheckError(clEnqueueReadBuffer(commands, d_s, CL_TRUE, 0, sizeof(float), &cfl, 0, NULL, NULL ));
+        cfl *= dt/dx;
+        
         /* Choose new time step if variable time step */
         if (cfl > 0){
             dt = std::min(dtmax, dt*cfldesire/cfl);
-            //printf("dt = %f\n", dt);
-            // dtmin = std::min(dt,dtmin);
-            // dtmax = std::max(dt,dtmax);
+            dtmin = std::min(dt,dtmin);
+            dtmax = std::max(dt,dtmax);
         }else{
             dt = dtmax;
         }
         CheckError(clSetKernelArg(k_update_q1, 7, sizeof(float) , &dt));
-        CheckError(clSetKernelArg(k_calc_cfl, 3, sizeof(float) , &dt));
         // /* Check to see if the Courant number was too large */
         // if (cfl <= cflmax){
         //     // Accept this step
@@ -245,17 +237,18 @@ int main(int argc, char const *argv[])
     clReleaseMemObject(d_amdq);
     clReleaseMemObject(d_s);
     clReleaseCommandQueue (commands);
+    
     clReleaseKernel(k_rp1_acoustic);
     clReleaseKernel(k_bc1);
     clReleaseKernel(k_qinit);
     clReleaseKernel(k_update_q1);
-    clReleaseKernel(k_calc_cfl);
+    clReleaseKernel(k_max_speed);
 
     clReleaseProgram(p_rp1_acoustic);
     clReleaseProgram(p_bc1);
     clReleaseProgram(p_qinit);
     clReleaseProgram(p_update_q1);
-    clReleaseProgram(p_calc_cfl);
+    clReleaseProgram(p_max_speed);
     clReleaseContext(context);
 
     return 0;
