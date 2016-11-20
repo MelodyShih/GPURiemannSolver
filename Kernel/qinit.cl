@@ -14,6 +14,14 @@ __kernel void qinit(__global float* d_q,
         d_q[meqn*i+1] = 2;
     }*/
 
+    /* Left going wave */
+    /*d_q[meqn*i] = 0;
+    d_q[meqn*i+1] = 0;
+    if( i == 2 ){
+        d_q[meqn*i] = -0.4;
+        d_q[meqn*i+1] = 0.2;
+    }*/
+
     /* gaussian hump */ 
     i = i - mbc + 1;
     xcell = xlower + (i-0.5)*dx;
