@@ -7,7 +7,7 @@ __kernel void acoustic_1d(__global float* d_q,
        Conserved quantities: pressure(p), velocity(u) */
 
     int i = get_local_id(0); 
-    barrier(CLK_GLOBAL_MEM_FENCE); 
+    //barrier(CLK_GLOBAL_MEM_FENCE); 
     if (i < mx + mbc && i > mbc - 1)
     {
         float p  = d_q[2*i], u = d_q[2*i+1], 

@@ -1,55 +1,41 @@
-__kernel void rp1_acoustic(__global float* d_p, 
-                           __global float* d_u,
-                           __global float* apdq, 
-                           __global float* amdq,
-                           const int meqn, const int mx, const int mbc, 
-                           const float dt_temp, const float dx, 
+__kernel void rp1_acoustic(__global float* d_q, 
+                           __global float* d_apdq, 
+                           __global float* d_amdq,
+                           __global float* s,
+                           const int mx, const int mbc, 
                            const float rho, const float K)
 {
+    /* Input: q, Output: d_apdq, d_amdq*/
     int i = get_local_id(0); 
-    if (i < mx + mbc && i > mbc - 1)
-    { 
-        float pl = d_p[i-1], ul = d_u[i-1], 
-              pr = d_p[i], ur = d_u[i];
-       
-        /* problem data */
-        float cc = sqrt(K/rho), zz = cc*rho;
-        float dt = dx/cc;
+    if (i < mx + mbc + 1 && i > mbc - 1)
+    {
+        /* Solve riemann problem from "ith" cell boundary 
+          (the boundary of ith and (i-1)th cell) */
         
-        /* left riemann problem */
-        float delta[2], a1, a2, wave1[2], wave2[2], s1, s2, amdq[2];
+        float pl = d_q[2*(i-1)], ul = d_q[2*(i-1)+1], 
+              pr = d_q[2*i], ur = d_q[2*i+1];
 
-        delta[0] = p - pl;
-        delta[1] = u - ul;
+        float cc = sqrt(K/rho), zz = cc*rho;
+        float delta[2], 
+              a1, s1, wave1[2], 
+              a2, s2, wave2[2]; 
+
+        delta[0] = pr - pl;
+        delta[1] = ur - ul;
+        
+        a1 = (-delta[0] + zz*delta[1]) / (2.0*zz);
+        wave1[0] = -a1*zz;
+        wave1[1] = a1;
+        s1 = -cc;
+        d_amdq[2*i]   = s1*wave1[0];
+        d_amdq[2*i+1] = s1*wave1[1];
         
         a2 = (delta[0] + zz*delta[1]) / (2.0*zz);
+        wave2[0] = a2*zz;
+        wave2[1] = a2;
+        s2 = cc;
 
-        wave1[0] = a2*zz;
-        wave1[1] = a2;
-        s1 = cc;
-        amdq[0] = s1*wave1[0];
-        amdq[1] = s1*wave1[1];
-        
-        p -= dt/dx*amdq[0];
-        u -= dt/dx*amdq[1];
-        
-        /* right riemann problem */
-        float apdq[2];
-
-        delta[0] = pr - p;
-        delta[1] = ur - u;
-        a1 = (-delta[0] + zz*delta[1]) / (2.0*zz);
-        wave2[0] = -a1*zz;
-        wave2[1] = a1;
-        s2 = -cc;
-
-        apdq[0] = s2*wave2[0];
-        apdq[1] = s2*wave2[1];
-        
-        p -= dt/dx*apdq[0];
-        u -= dt/dx*apdq[1];
-        
-        d_p[i] = p;
-        d_u[i] = u;
+        d_apdq[2*i]   = s2*wave2[0];
+        d_apdq[2*i+1] = s2*wave2[1];
     }
 }
