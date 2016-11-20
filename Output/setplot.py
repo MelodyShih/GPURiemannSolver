@@ -28,7 +28,7 @@ def setplot(plotdata):
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = 'subplot(2,1,1)'   # top figure
     plotaxes.xlimits = 'auto'
-    plotaxes.ylimits = [-.5,5]
+    plotaxes.ylimits = [-.5,1.1]
     plotaxes.title = 'Pressure'
 
     # Set up for item on these axes:
@@ -44,7 +44,7 @@ def setplot(plotdata):
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = 'subplot(2,1,2)'   # bottom figure
     plotaxes.xlimits = 'auto'
-    plotaxes.ylimits = [-.5,5]
+    plotaxes.ylimits = [-.5,1.1]
     plotaxes.title = 'Velocity'
 
     # Set up for item on these axes:

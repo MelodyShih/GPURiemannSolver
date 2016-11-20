@@ -8,7 +8,7 @@
 #include "helper.h"
 
 #ifndef output
-#define output 1
+#define output 0
 #endif
 
 int main(int argc, char const *argv[])
@@ -29,7 +29,7 @@ int main(int argc, char const *argv[])
     int meqn = 2, mwaves = 2;
     int ndim = 1;
     int maux = 0;
-    int mx = 10, mbc = 2;
+    int mx = 100, mbc = 2;
     int mtot = mx + 2*mbc;
     int nout = 10;
     int iframe = 0;
@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
     int maxtimestep = 50;
     float t = 0;
     float t_old;
-    float t_start = 0, t_final = 2.0;
+    float t_start = 0, t_final = 1.0;
     float dt = dx / 2;
     float dtmax = 1.0, dtmin = 0.0;
     
@@ -60,7 +60,7 @@ int main(int argc, char const *argv[])
     float cfldesire = 1;
 
     std::size_t global=mtot;
-    std::size_t local =mtot;
+    std::size_t local =mtot/2;
 
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
