@@ -8,11 +8,16 @@
 #include "../helper.h"
 
 #ifndef output
-#define output 1
+#define output 0
 #endif
 
 int main(int argc, char const *argv[])
 {
+    const char* version;
+    if (argv[1] == NULL) 
+        version = "get_max.cl";
+    else 
+        version = argv[1];
     /* Opencl related variables */
     cl_int            err;
     cl_platform_id    platform = GetPlatform(0); 
@@ -24,17 +29,16 @@ int main(int argc, char const *argv[])
     cl_mem            d_data, d_maxvalue;
 
     /* Data for pde solver */
-    int mtot = 10;
+    int mtot = 256;
     float data[mtot];
     float max;
     for (int i = 0; i < mtot; ++i)
     {
-        data[i] = i;
+        data[i] = i+ 1;
     }
 
-    std::size_t global=mtot;
-    std::size_t local =mtot;
-
+    std::size_t local = 128;
+    std::size_t global= ((mtot - 1)/local + 1) * local;
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
     CheckError(err);
@@ -45,7 +49,7 @@ int main(int argc, char const *argv[])
 
     /* Create program, kernel from source */
 
-    p_get_max = CreateProgram(LoadKernel ("get_max.cl"), context);
+    p_get_max = CreateProgram(LoadKernel (version), context);
     err     = clBuildProgram(p_get_max, 1, &device, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
@@ -60,14 +64,33 @@ int main(int argc, char const *argv[])
     /* Set arguments */
     /* Calculate cfl */ 
     CheckError(clSetKernelArg(k_get_max, 0, sizeof(cl_mem), &d_data));
-    CheckError(clSetKernelArg(k_get_max, 1, sizeof(cl_mem), &d_maxvalue));
-    CheckError(clSetKernelArg(k_get_max, 2, sizeof(float)*local, NULL));
+    CheckError(clSetKernelArg(k_get_max, 1, sizeof(float)*local, NULL));
+    CheckError(clSetKernelArg(k_get_max, 2, sizeof(int), &mtot));
 
-    CheckError(clEnqueueNDRangeKernel(commands, k_get_max, 1, NULL, &global, &local, 0, NULL, NULL));
-    CheckError(clEnqueueReadBuffer(commands, d_data, CL_TRUE, 0, sizeof(float)*mtot, data, 0, NULL, NULL ));  
-    CheckError(clEnqueueReadBuffer(commands, d_maxvalue, CL_TRUE, 0, sizeof(float), &max, 0, NULL, NULL ));
+    std::size_t numgroup;
+    for (std::size_t length = global; length > 1; length = numgroup)
+    {
+        //numgroup = ((length - 1)/local + 1);
+        std::cout<<std::endl;
+        std::cout<<"length = "<<length<<std::endl;
+        //global = numgroup * local;
+        CheckError(clEnqueueNDRangeKernel(commands, k_get_max, 1, NULL, &length, &local, 0, NULL, NULL));
+        numgroup = (length - 1)/local + 1;
+        if (numgroup < local)
+        {
+            local  = numgroup;
+        }
+        std::cout<<"group = "<<numgroup<<std::endl;
+        CheckError(clEnqueueReadBuffer(commands, d_data, CL_TRUE, 0, sizeof(float)*numgroup, data, 0, NULL, NULL ));
+        for (int i = 0; i < numgroup; ++i)
+        {
+            std::cout<<"data["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<data[i]<<std::endl;
+        }
+    }
+    // CheckError(clEnqueueReadBuffer(commands, d_data, CL_TRUE, 0, sizeof(float)*mtot, data, 0, NULL, NULL ));  
+    // CheckError(clEnqueueReadBuffer(commands, d_maxvalue, CL_TRUE, 0, sizeof(float), &max, 0, NULL, NULL ));
 #if output
-    std::cout<<"max = "<<max<<std::endl;
+    std::cout<<"max = "<<data[0]<<std::endl;
     for (int i = 0; i < mtot; ++i)
     {
             std::cout<<"data["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<data[i]<<std::endl;
