@@ -1,4 +1,7 @@
-E4302 Methods in Computational Science Term Project 
+#E4302 Methods in Computational Science Term Project 
 
-Implementation of finite volume methods for conservation law on GPU
+##GPU acceleration of riemann solver
 
+###Equations:
+1. 1d linear acoustic equation (finished)
+2. 1d euler equation
