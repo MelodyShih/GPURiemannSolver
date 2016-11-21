@@ -1,15 +1,22 @@
-main: main.o
-	g++ -o main main.o -framework opencl
+acoustic: acoustic.o
+	g++ -o $@ $< -framework opencl
 	rm *.o
-main.o: main.cpp
-	g++ -c main.cpp
+acoustic.o: acoustic.cpp
+	g++ -c $<
 
-main2: main2.o
-	g++ -o main2 main2.o -framework opencl
+acoustic_v2: acoustic_v2.o
+	g++ -o $@ $< -framework opencl
 	rm *.o
-main2.o: main2.cpp
-	g++ -c main2.cpp
+acoustic_v2.o: acoustic_v2.cpp
+	g++ -c $<
+
+euler_v2: euler_v2.o
+	g++ -o $@ $< -framework opencl
+	rm *.o
+euler_v2.o: euler_v2.cpp
+	g++ -c $<
 
 clean:
-	rm main
-	rm main2
+	rm acoustic
+	rm acoustic_v2
+	rm euler_v2
