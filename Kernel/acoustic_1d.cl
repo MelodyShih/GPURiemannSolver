@@ -1,13 +1,13 @@
 __kernel void acoustic_1d(__global float* d_q, 
+                          __global float* d_s,
                           const int mx, const int mbc, 
-                          const float dt_temp, const float dx, 
+                          const float dt, const float dx, 
                           const float rho, const float K)
 {
     /* meqn = 2, mwaves = 2, 
        Conserved quantities: pressure(p), velocity(u) */
-
-    int i = get_local_id(0); 
-    //barrier(CLK_GLOBAL_MEM_FENCE); 
+    int i = get_global_id(0);
+    d_s[i] = 0.0;
     if (i < mx + mbc && i > mbc - 1)
     {
         float p  = d_q[2*i], u = d_q[2*i+1], 
@@ -15,7 +15,7 @@ __kernel void acoustic_1d(__global float* d_q,
               pr = d_q[2*(i+1)], ur = d_q[2*(i+1)+1];
 
         float cc = sqrt(K/rho), zz = cc*rho;
-        float dt = dx/cc; // Should be removed and use the input dt
+        //float dt = dx/cc; // Should be removed and use the input dt
         float delta[2], 
               a1, s1, wave1[2], // right-going wave 
               a2, s2, wave2[2]; //  left-going wave
@@ -44,5 +44,6 @@ __kernel void acoustic_1d(__global float* d_q,
         
         d_q[2*i] = p;
         d_q[2*i + 1] = u;
+        d_s[i] = cc;
     }
 }
