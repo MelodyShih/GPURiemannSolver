@@ -49,6 +49,7 @@ int main(int argc, char const *argv[])
     
     /* other */
     float cfl, cflmax = 1, cfldesire = 1.0;
+    char outdir[] = "Output/acoustic";
 
     std::size_t local    = mtot/2;
     std::size_t numgroup = ((mtot - 1)/local + 1);
@@ -73,13 +74,13 @@ int main(int argc, char const *argv[])
     k_acoustic_1d = clCreateKernel(p_acoustic_1d, "acoustic_1d", &err);
 
 
-    p_qinit = CreateProgram(LoadKernel ("Kernel/qinit.cl"), context);
+    p_qinit = CreateProgram(LoadKernel ("Kernel/acoustic_qinit.cl"), context);
     err     = clBuildProgram(p_qinit, 1, &device, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         ProgramErrMsg(p_qinit, device);
     }
-    k_qinit = clCreateKernel(p_qinit, "qinit", &err);
+    k_qinit = clCreateKernel(p_qinit, "acoustic_qinit", &err);
     CheckError(err);
 
     p_bc1 = CreateProgram(LoadKernel ("Kernel/bc1.cl"), context);
@@ -143,7 +144,7 @@ int main(int argc, char const *argv[])
     }
 #endif
 
-    out1(meqn, mbc, mx, xlower, dx, q, 0.0, iframe, NULL, maux);
+    out1(meqn, mbc, mx, xlower, dx, q, 0.0, iframe, NULL, maux, outdir);
     iframe++;
 
     /* Launch kernel */
@@ -199,7 +200,7 @@ int main(int argc, char const *argv[])
 #endif
         if (t > tout)
         {
-            out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux);
+            out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux, outdir);
             iframe++;
             tout += dtout;
         }

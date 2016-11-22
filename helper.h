@@ -103,7 +103,7 @@ cl_device_id GetDevice(cl_platform_id platform, int id){
 
 void ProgramErrMsg(cl_program program, cl_device_id device){
     size_t len;
-    char buffer[2048];
+    char buffer[4096];
 
     printf("Error: Failed to build program executable!\n");
     clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
@@ -112,11 +112,11 @@ void ProgramErrMsg(cl_program program, cl_device_id device){
 }
 
 void out1(int meqn, int mbc, int mx, float xlower, float dx, float* q,
-          float t, int iframe, float* aux, int maux){
+          float t, int iframe, float* aux, int maux, char* dir){
     /*output q data as the format in clawpack */
     char filename[40];
     FILE *pFile;
-    sprintf(filename,"Output/_output/fort.q%04d",iframe);
+    sprintf(filename,"%s/_output/fort.q%04d",dir,iframe);
     pFile = fopen (filename,"w");
     fprintf(pFile, "%5d                 grid_number\n", 1);
     fprintf(pFile, "%5d                 AMR_level\n", 1);
@@ -133,7 +133,7 @@ void out1(int meqn, int mbc, int mx, float xlower, float dx, float* q,
     }
     fclose (pFile);
 
-    sprintf(filename,"Output/_output/fort.t%04d",iframe);
+    sprintf(filename,"%s/_output/fort.t%04d",dir,iframe);
     pFile = fopen (filename,"w");
     fprintf(pFile, "%26.16E    time\n",t);
     fprintf(pFile, "%5d                 meqn\n", meqn);

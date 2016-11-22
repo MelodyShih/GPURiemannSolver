@@ -1,6 +1,6 @@
-__kernel void qinit(__global float* d_q, 
-                    const int meqn, const int mx, const int mbc, 
-                    const float xlower, const float dx){
+__kernel void acoustic_qinit(__global float* d_q, 
+                            const int meqn, const int mx, const int mbc, 
+                            const float xlower, const float dx){
     int i = get_global_id(0);
     float beta = 200;
     float xcell;
