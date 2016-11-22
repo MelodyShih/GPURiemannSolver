@@ -194,7 +194,7 @@ int main(int argc, char const *argv[])
         }
         CheckError(clEnqueueReadBuffer(commands, d_s, CL_TRUE, 0, sizeof(float), &cfl, 0, NULL, NULL ));
         cfl *= dt/dx;
-        
+        std::cout<<"At time "<<t<<" cfl = "<<cfl<<std::endl;
         /* Choose new time step if variable time step */
         if (cfl > 0){
             dt = std::min(dtmax, dt*cfldesire/cfl);
@@ -204,15 +204,17 @@ int main(int argc, char const *argv[])
             dt = dtmax;
         }
         CheckError(clSetKernelArg(k_update_q1, 7, sizeof(float) , &dt));
-        // /* Check to see if the Courant number was too large */
-        // if (cfl <= cflmax){
-        //     // Accept this step
-        //     cflmax = std::max(cfl, cflmax);
-        // }else{
-        //     // Reject this step => Take a smaller step
-
-        // }
-        if (t >= t_final)    break;
+        
+        if (cfl <= cflmax){
+            //Accept this step
+            //cflmax = std::max(cfl, cflmax);
+        }else{
+            // Reject this step => Take a smaller step
+            std::cout<<"-----Reject this step-----"<<std::endl;
+            clEnqueueCopyBuffer (commands, d_q_old, d_q, 0, 0, sizeof(float)*mtot*meqn, 0, NULL, NULL);
+            t = t_old;
+        }
+        
 
         /* Read ouput array */
         CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL));
@@ -224,12 +226,13 @@ int main(int argc, char const *argv[])
                      <<",  u["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[2*i+1]<<std::endl;
         }
 #endif
-        if (t > tout)
+        if (t >= tout)
         {
             out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux, outdir);
             iframe++;
             tout += dtout;
         }
+        if (t >= t_final)    break;
     }
 
     clReleaseMemObject(d_q);

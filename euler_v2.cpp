@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
     /* Data for pde solver */
     int meqn = 3, mwaves = 3, maux = 0;
     int ndim = 1;
-    int mx = 800, mbc = 2, mtot = mx + 2*mbc;
+    int mx = 10, mbc = 2, mtot = mx + 2*mbc;
     int nout = 10;
     int iframe = 0;
     
@@ -37,10 +37,10 @@ int main(int argc, char const *argv[])
     float dx = (xupper - xlower)/mx;
     
     /* time */
-    int maxtimestep = 10000;
+    int maxtimestep = 1;
     float t = 0, t_old;
     float t_start = 0, t_final = 0.038;
-    float dt = 0.00002, dtmax = 1.0, dtmin = 0.0;
+    float dt = 0.1, dtmax = 1.0, dtmin = 0.0;
     float dtout = t_final/nout, tout = 0;
     
     /* data */
@@ -53,7 +53,7 @@ int main(int argc, char const *argv[])
     float cfl, cflmax = 1, cfldesire = 0.9;
     char outdir[] = "Output/euler";
     
-    std::size_t local    = mtot/4;
+    std::size_t local    = mtot/2;
     std::size_t numgroup = ((mtot - 1)/local + 1);
     std::size_t global   = numgroup * local;
     std::size_t l;
@@ -183,17 +183,13 @@ int main(int argc, char const *argv[])
 
         CheckError(clEnqueueNDRangeKernel(commands, k_bc1, 1, NULL, &global, &local, 0, NULL, NULL));
         CheckError(clEnqueueNDRangeKernel(commands, k_rp1_euler, 1, NULL, &global, &local, 0, NULL, NULL));
-        // CheckError(clEnqueueReadBuffer(commands, d_s, CL_TRUE, 0, sizeof(float)*mtot, s, 0, NULL, NULL));
-        // std::cout<<std::endl;
-        // for (int i = 4; i < 5 ; ++i){
-        //     std::cout<<"d_s["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<s[i]<<std::endl;
-        // }       
-        // CheckError(clEnqueueReadBuffer(commands, d_amdq, CL_TRUE, 0, sizeof(float)*meqn*mtot, s, 0, NULL, NULL));
-        // for (int i = 4; i < 5 ; ++i){
-        //     std::cout<<"d_amdq["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<s[meqn*i]<<std::endl;
-        // }
         CheckError(clEnqueueNDRangeKernel(commands, k_update_q1, 1, NULL, &global, &local, 0, NULL, NULL));
         
+        CheckError(clEnqueueReadBuffer(commands, d_s, CL_TRUE, 0, sizeof(float)*mtot, &s, 0, NULL, NULL ));
+        for (int i = 0; i < mtot; ++i)
+        {
+            std::cout<<s[i]<<" "<<std::endl;
+        }
         /* Get the maximum speed by recursively calling k_max_speed kernel */ 
         l = local;
         for (std::size_t length = global; length > 1; length = numgroup)
@@ -204,7 +200,7 @@ int main(int argc, char const *argv[])
         }
         CheckError(clEnqueueReadBuffer(commands, d_s, CL_TRUE, 0, sizeof(float), &cfl, 0, NULL, NULL ));
         cfl *= dt/dx;
-        std::cout<<"cfl = "<<cfl<<std::endl;
+        std::cout<<"At time "<<t<<" cfl = "<<cfl<<std::endl;
         /* Choose new time step if variable time step */
         if (cfl > 0){
             dt = std::min(dtmax, dt*cfldesire/cfl);
@@ -214,14 +210,16 @@ int main(int argc, char const *argv[])
             dt = dtmax;
         }
         CheckError(clSetKernelArg(k_update_q1, 7, sizeof(float) , &dt));
-        // /* Check to see if the Courant number was too large */
-        // if (cfl <= cflmax){
-        //     // Accept this step
-        //     cflmax = std::max(cfl, cflmax);
-        // }else{
-        //     // Reject this step => Take a smaller step
-
-        // }
+        /* Check to see if the Courant number was too large */
+        if (cfl <= cflmax){
+            // Accept this step
+            //cflmax = std::max(cfl, cflmax);
+        }else{
+            // Reject this step => Take a smaller step
+            std::cout<<"-----Reject this step-----"<<std::endl;
+            clEnqueueCopyBuffer (commands, d_q_old, d_q, 0, 0, sizeof(float)*mtot*meqn, 0, NULL, NULL);
+            t = t_old;
+        }
 
         /* Read ouput array */
         CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(float)*mtot*meqn, q, 0, NULL, NULL));
