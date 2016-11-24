@@ -1,20 +1,20 @@
 acoustic: acoustic.o
-	g++ -o $@ $< -framework opencl
+	g++ -o $@ $< -L/usr/local/cuda-7.5/lib64 -lOpenCL
 	rm *.o
 acoustic.o: acoustic.cpp
-	g++ -c $<
+	g++  -c $< -I/usr/local/cuda-7.5/include
 
 acoustic_v2: acoustic_v2.o
-	g++ -o $@ $< -framework opencl
+	g++ -o $@ $< -L/usr/local/cuda-7.5/lib64 -lOpenCL
 	rm *.o
 acoustic_v2.o: acoustic_v2.cpp
-	g++ -c $<
+	g++ -c $< -I/usr/local/cuda-7.5/include
 
 euler_v2: euler_v2.o
-	g++ -o $@ $< -framework opencl
-	rm *.o
+	g++ -o $@ $< -L/usr/local/cuda-7.5/lib64 -lOpenCL
+	rm *.o 
 euler_v2.o: euler_v2.cpp
-	g++ -c $<
+	g++ -c $< -I/usr/local/cuda-7.5/include
 
 clean:
 	rm acoustic

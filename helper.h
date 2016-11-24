@@ -8,7 +8,7 @@ void CheckError (cl_int err)
 {
     if (err != CL_SUCCESS) {
         std::cerr << "OpenCL call failed with error " << err << std::endl;
-        std::exit (1);
+        exit (1);
     }
 }
 
@@ -36,19 +36,19 @@ cl_program CreateProgram (const std::string& source, cl_context context)
 std::string GetPlatformName (cl_platform_id id)
 {
     size_t size = 0;
-    clGetPlatformInfo (id, CL_PLATFORM_NAME, 0, nullptr, &size);
+    clGetPlatformInfo (id, CL_PLATFORM_NAME, 0, NULL, &size);
 
     std::string result;
     result.resize (size);
     clGetPlatformInfo (id, CL_PLATFORM_NAME, size,
-        const_cast<char*> (result.data ()), nullptr);
+        const_cast<char*> (result.data ()), NULL);
 
     return result;
 }
 
 cl_platform_id GetPlatform(int id){
     cl_uint platformIdCount = 0;
-    clGetPlatformIDs (0, nullptr, &platformIdCount);
+    clGetPlatformIDs (0, NULL, &platformIdCount);
 
     if (platformIdCount == 0) {
         std::cerr << "No OpenCL platform found" << std::endl;
@@ -57,7 +57,7 @@ cl_platform_id GetPlatform(int id){
     }
 
     std::vector<cl_platform_id> platformIds (platformIdCount);
-    clGetPlatformIDs (platformIdCount, platformIds.data (), nullptr);
+    clGetPlatformIDs (platformIdCount, platformIds.data (), NULL);
 
     /* Print out the platform information */
     for (cl_uint i = 0; i < platformIdCount; ++i) {
@@ -70,12 +70,12 @@ cl_platform_id GetPlatform(int id){
 std::string GetDeviceName (cl_device_id id)
 {
     size_t size = 0;
-    clGetDeviceInfo (id, CL_DEVICE_NAME, 0, nullptr, &size);
+    clGetDeviceInfo (id, CL_DEVICE_NAME, 0, NULL, &size);
 
     std::string result;
     result.resize (size);
     clGetDeviceInfo (id, CL_DEVICE_NAME, size,
-        const_cast<char*> (result.data ()), nullptr);
+        const_cast<char*> (result.data ()), NULL);
 
     return result;
 }
@@ -83,7 +83,7 @@ std::string GetDeviceName (cl_device_id id)
 cl_device_id GetDevice(cl_platform_id platform, int id){
     cl_uint deviceIdCount = 0;
 
-    clGetDeviceIDs (platform, CL_DEVICE_TYPE_GPU, 0, nullptr,
+    clGetDeviceIDs (platform, CL_DEVICE_TYPE_GPU, 0, NULL,
         &deviceIdCount);
 
     if (deviceIdCount == 0) {
@@ -93,7 +93,7 @@ cl_device_id GetDevice(cl_platform_id platform, int id){
     }
 
     std::vector<cl_device_id> deviceIds (deviceIdCount);
-    clGetDeviceIDs (platform, CL_DEVICE_TYPE_GPU, deviceIdCount, deviceIds.data (), nullptr);
+    clGetDeviceIDs (platform, CL_DEVICE_TYPE_GPU, deviceIdCount, deviceIds.data (), NULL);
 
     for (cl_uint i = 0; i < deviceIdCount; ++i) {
         std::cout << "\t (" << (i+1) << ") : " << GetDeviceName (deviceIds [i]) << std::endl;
@@ -111,8 +111,8 @@ void ProgramErrMsg(cl_program program, cl_device_id device){
     exit(1);
 }
 
-void out1(int meqn, int mbc, int mx, float xlower, float dx, float* q,
-          float t, int iframe, float* aux, int maux, char* dir){
+void out1(int meqn, int mbc, int mx, double xlower, double dx, double* q,
+          double t, int iframe, double* aux, int maux, char* dir){
     /*output q data as the format in clawpack */
     char filename[40];
     FILE *pFile;

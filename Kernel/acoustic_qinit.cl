@@ -1,9 +1,9 @@
-__kernel void acoustic_qinit(__global float* d_q, 
+__kernel void acoustic_qinit(__global double* d_q, 
                             const int meqn, const int mx, const int mbc, 
-                            const float xlower, const float dx){
+                            const double xlower, const double dx){
     int i = get_global_id(0);
-    float beta = 200;
-    float xcell;
+    double beta = 200;
+    double xcell;
     
     /* Right going wave */
     /*

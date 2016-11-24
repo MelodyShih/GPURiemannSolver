@@ -1,9 +1,9 @@
-__kernel void rp1_euler(__global float* d_q, 
-                        __global float* d_apdq, 
-                        __global float* d_amdq,
-                        __global float* d_s,
+__kernel void rp1_euler(__global double* d_q, 
+                        __global double* d_apdq, 
+                        __global double* d_amdq,
+                        __global double* d_s,
                         const int mx, const int mbc, 
-                        const float gamma)
+                        const double gamma)
 {
     /* Input: q, Output: d_apdq, d_amdq, d_s */
     /* meqn = 3, mwaves = 3 */
@@ -15,17 +15,17 @@ __kernel void rp1_euler(__global float* d_q,
         /* Solve riemann problem from "ith" cell boundary 
           (the boundary of ith and (i-1)th cell) */
         
-        float rhol = d_q[3*(i-1)], rhoul = d_q[3*(i-1)+1], el = d_q[3*(i-1)+2],
+        double rhol = d_q[3*(i-1)], rhoul = d_q[3*(i-1)+1], el = d_q[3*(i-1)+2],
               rhor = d_q[3*i], rhour = d_q[3*i+1], er = d_q[3*i+2];
 
-        float gamma1 = gamma - 1.0;
-        float delta[3], 
+        double gamma1 = gamma - 1.0;
+        double delta[3], 
               a1, s1, wave1[3], 
               a2, s2, wave2[3], 
               a3, s3, wave3[3]; 
-        float u, a, enth;
-        float rhosqrtl, rhosqrtr, pl, pr, rhosq2;
-        float temp;
+        double u, a, enth;
+        double rhosqrtl, rhosqrtr, pl, pr, rhosq2;
+        double temp;
 
         /* Calculate roe average */
         rhosqrtl = sqrt(rhol);

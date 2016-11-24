@@ -1,8 +1,8 @@
-__kernel void update_q1(__global float* d_q, 
-                        __global float* d_apdq, 
-                        __global float* d_amdq,
+__kernel void update_q1(__global double* d_q, 
+                        __global double* d_apdq, 
+                        __global double* d_amdq,
                         const int meqn, const int mx, const int mbc, 
-                        const float dx, const float dt)
+                        const double dx, const double dt)
 {
 	int i = get_global_id(0); 
     if (i < mx + mbc && i > mbc - 1)

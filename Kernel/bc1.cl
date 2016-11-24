@@ -1,4 +1,4 @@
-__kernel void bc1(__global float* d_q, 
+__kernel void bc1(__global double* d_q, 
                   const int meqn, const int mx, const int mbc){
     int i = get_global_id(0);
     /* Periodic BC */

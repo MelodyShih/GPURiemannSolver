@@ -1,8 +1,8 @@
-__kernel void acoustic_1d(__global float* d_q, 
-                          __global float* d_s,
+__kernel void acoustic_1d(__global double* d_q, 
+                          __global double* d_s,
                           const int mx, const int mbc, 
-                          const float dt, const float dx, 
-                          const float rho, const float K)
+                          const double dt, const double dx, 
+                          const double rho, const double K)
 {
     /* meqn = 2, mwaves = 2, 
        Conserved quantities: pressure(p), velocity(u) */
@@ -10,13 +10,13 @@ __kernel void acoustic_1d(__global float* d_q,
     d_s[i] = 0.0;
     if (i < mx + mbc && i > mbc - 1)
     {
-        float p  = d_q[2*i], u = d_q[2*i+1], 
+        double p  = d_q[2*i], u = d_q[2*i+1], 
               pl = d_q[2*(i-1)], ul = d_q[2*(i-1)+1], 
               pr = d_q[2*(i+1)], ur = d_q[2*(i+1)+1];
 
-        float cc = sqrt(K/rho), zz = cc*rho;
-        //float dt = dx/cc; // Should be removed and use the input dt
-        float delta[2], 
+        double cc = sqrt(K/rho), zz = cc*rho;
+        //double dt = dx/cc; // Should be removed and use the input dt
+        double delta[2], 
               a1, s1, wave1[2], // right-going wave 
               a2, s2, wave2[2]; //  left-going wave
 

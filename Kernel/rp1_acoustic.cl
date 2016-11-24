@@ -1,9 +1,9 @@
-__kernel void rp1_acoustic(__global float* d_q, 
-                           __global float* d_apdq, 
-                           __global float* d_amdq,
-                           __global float* d_s,
+__kernel void rp1_acoustic(__global double* d_q, 
+                           __global double* d_apdq, 
+                           __global double* d_amdq,
+                           __global double* d_s,
                            const int mx, const int mbc, 
-                           const float rho, const float K)
+                           const double rho, const double K)
 {
     /* Input: q, Output: d_apdq, d_amdq*/
     int i = get_global_id(0); 
@@ -13,11 +13,11 @@ __kernel void rp1_acoustic(__global float* d_q,
         /* Solve riemann problem from "ith" cell boundary 
           (the boundary of ith and (i-1)th cell) */
         
-        float pl = d_q[2*(i-1)], ul = d_q[2*(i-1)+1], 
+        double pl = d_q[2*(i-1)], ul = d_q[2*(i-1)+1], 
               pr = d_q[2*i], ur = d_q[2*i+1];
 
-        float cc = sqrt(K/rho), zz = cc*rho;
-        float delta[2], 
+        double cc = sqrt(K/rho), zz = cc*rho;
+        double delta[2], 
               a1, s1, wave1[2], 
               a2, s2, wave2[2]; 
 

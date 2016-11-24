@@ -1,13 +1,13 @@
-__kernel void euler_qinit(__global float* d_q, 
+__kernel void euler_qinit(__global double* d_q, 
                             const int meqn, const int mx, const int mbc, 
-                            const float xlower, const float dx, 
-                            const float gamma){
+                            const double xlower, const double dx, 
+                            const double gamma){
     int i = get_global_id(0);
-    float xcell = xlower + dx*(i - mbc + 1 - 0.5);
+    double xcell = xlower + dx*(i - mbc + 1 - 0.5);
     /*
-    float rho_l = 1.0, rho_r = 1.0/8.0;
-    float p_l = 1.0, p_r = 0.1;
-    float pressure, velocity;
+    double rho_l = 1.0, rho_r = 1.0/8.0;
+    double p_l = 1.0, p_r = 0.1;
+    double pressure, velocity;
     
     if(xcell < 0.0){
         d_q[meqn*i] = rho_l;

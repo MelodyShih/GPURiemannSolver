@@ -1,5 +1,5 @@
-__kernel void max_speed(__global float* d_speed,
-					    __local  float* s_speed)
+__kernel void max_speed(__global double* d_speed,
+					    __local  double* s_speed)
 {
 	int i = get_global_id(0);
 	int tid = get_local_id(0);
