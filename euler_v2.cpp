@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cassert>
 #include <fstream>
+#include <time.h>
 
 #include <CL/cl.h>
 #include "helper.h"
@@ -28,7 +29,8 @@ int main(int argc, char const *argv[])
     /* Data for pde solver */
     int meqn = 3, mwaves = 3, maux = 0;
     int ndim = 1;
-    int mx = 800, mbc = 2, mtot = mx + 2*mbc;
+    int mx = 764, mbc = 2, mtot = mx + 2*mbc;
+    int mtot = 1024*temp, mbc = 2, mx = mtot-2*mbc;
     int nout = 10;
     int iframe = 0;
     
@@ -37,7 +39,8 @@ int main(int argc, char const *argv[])
     double dx = (xupper - xlower)/mx;
     
     /* time */
-    int maxtimestep = 2000;
+    int maxtimestep = 10000000;
+    int totaltimestep;
     double t = 0, t_old;
     double t_start = 0, t_final = 0.038;
     double dt = 0.1, dtmax = 1.0, dtmin = 0.0;
@@ -53,7 +56,7 @@ int main(int argc, char const *argv[])
     double cfl, cflmax = 1, cfldesire = 0.9;
     char outdir[] = "Output/euler";
     
-    std::size_t local    = mtot/4;
+    std::size_t local    = 256;
     std::size_t numgroup = ((mtot - 1)/local + 1);
     std::size_t global   = numgroup * local;
     std::size_t l;
@@ -62,7 +65,6 @@ int main(int argc, char const *argv[])
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
     CheckError(err);
-
     /* Create commands */
     commands = clCreateCommandQueue (context, device, 0, &err);
     CheckError(err);
@@ -172,7 +174,7 @@ int main(int argc, char const *argv[])
 
     out1(meqn, mbc, mx, xlower, dx, q, 0.0, iframe, NULL, maux, outdir);
     iframe++;
-
+    clock_t begin = clock();
     tout += dtout;
     /* Launch kernel */
     for (int j = 0; j < maxtimestep; ++j)
@@ -203,7 +205,7 @@ int main(int argc, char const *argv[])
         }
         CheckError(clEnqueueReadBuffer(commands, d_s, CL_TRUE, 0, sizeof(double), &cfl, 0, NULL, NULL ));
         cfl *= dt/dx;
-        std::cout<<"At time "<<std::setw(10)<<t<<" cfl = "<<std::setw(10)<<cfl<<std::endl;
+        // std::cout<<"At time "<<std::setw(10)<<t<<" cfl = "<<std::setw(10)<<cfl<<std::endl;
         /* Choose new time step if variable time step */
         if (cfl > 0){
             dt = std::min(dtmax, dt*cfldesire/cfl);
@@ -237,12 +239,21 @@ int main(int argc, char const *argv[])
 #endif
         if (t >= tout)
         {
+            std::cout<<"INFO: Solution "<<iframe<<" computed for time "<<t<<std::endl;
             out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux, outdir);
             iframe++;
             tout += dtout;
         }
-        if (t >= t_final)    break;
+        if (t >= t_final){
+            std::cout<<"Total time steps = "<<j<<std::endl;
+            totaltimestep = j;
+            break;
+        }
     }
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    std::cout<<"Total execution time (secs) = "<<time_spent<<std::endl;
+    std::cout<<"Time/step = "<<time_spent/totaltimestep<<std::endl;
 
     clReleaseMemObject(d_q);
     clReleaseMemObject(d_q_old);
