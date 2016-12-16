@@ -32,3 +32,5 @@ clean:
 	rm acoustic
 	rm acoustic_v2
 	rm euler_v2
+	rm device_info
+	rm kernel_info

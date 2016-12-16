@@ -1,7 +1,7 @@
 __kernel void euler_qinit(__global double* d_q, 
-                            const int meqn, const int mx, const int mbc, 
-                            const double xlower, const double dx, 
-                            const double gamma){
+                          const int meqn, const int mx, const int mbc, 
+                          const double xlower, const double dx, 
+                          const double gamma){
     int i = get_global_id(0);
     double xcell = xlower + dx*(i - mbc + 1 - 0.5);
     /*

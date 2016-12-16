@@ -1,4 +1,4 @@
-__kernel void rp1_euler(__global double* d_q, 
+__kernel void rp1_euler1(__global double* d_q, 
                         __global double* d_apdq, 
                         __global double* d_amdq,
                         __global double* d_s,
@@ -16,7 +16,7 @@ __kernel void rp1_euler(__global double* d_q,
           (the boundary of ith and (i-1)th cell) */
         
         double rhol = d_q[3*(i-1)], rhoul = d_q[3*(i-1)+1], el = d_q[3*(i-1)+2],
-              rhor = d_q[3*i], rhour = d_q[3*i+1], er = d_q[3*i+2];
+               rhor = d_q[3*i], rhour = d_q[3*i+1], er = d_q[3*i+2];
 
         double gamma1 = gamma - 1.0;
         double delta[3], 

@@ -29,7 +29,6 @@ cl_program CreateProgram (const std::string& source, cl_context context)
     cl_program program = clCreateProgramWithSource (context, 1, sources, lengths, &err);
 
     CheckError (err);
-
     return program;
 }
 

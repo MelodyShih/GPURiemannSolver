@@ -25,4 +25,5 @@ __kernel void bc1(__global double* d_q,
             d_q[meqn*i + m] = d_q[meqn*(mx+mbc-1)+m];
         }
     }
+    /* Wall */
 }
