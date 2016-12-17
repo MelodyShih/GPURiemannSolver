@@ -45,9 +45,10 @@ int main(int argc, char const *argv[])
     cl_char *buffer;
     size_t len;
 
-    context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+    context = clCreateContext(0, 1, &device, NULL, NULL, &err);
+    CheckError(err);
     commands = clCreateCommandQueue (context, device, 0, &err);
-
+    CheckError(err);
     /* Create program, kernel from source */
     program = CreateProgram(LoadKernel (s1.c_str()), context);
     err     = clBuildProgram(program, 1, &device, "-cl-nv-verbose", NULL, NULL);
