@@ -14,23 +14,34 @@
 
 int main(int argc, char const *argv[])
 {
+    if (argc < 3)
+    {
+        std::cerr<<"Please provide ''work group size'' and ''mtot''"<<std::endl;
+        exit(1);
+    }
+    std::size_t local    = atoi(argv[1]);
+    int mtot = atoi(argv[2]);
+
     /* Opencl related variables */
     cl_int            err = 0;
     cl_platform_id    platform = GetPlatform(0); 
     cl_device_id      device   = GetDevice(platform, 0);
-    cl_context        context;
-
-    cl_command_queue  commands;
+    cl_context        context  = clCreateContext(0, 1, &device, NULL, NULL, &err);
+    CheckError(err);
+    cl_command_queue  commands = clCreateCommandQueue (context, device, 0, &err);
+    CheckError(err);
     cl_program        p_rp1_euler, p_qinit, p_bc1, 
                       p_update_q1, p_max_speed;
     cl_kernel         k_rp1_euler, k_qinit, k_bc1, 
                       k_update_q1, k_max_speed;
     cl_mem            d_q, d_q_old, d_apdq, d_amdq, d_s;
 
-    /* Data for pde solver */
+    // -------------------------------------------------------------------------------//
+    //                               PDE Solver Data                                  //
+    // -------------------------------------------------------------------------------//
     int meqn = 3, mwaves = 3, maux = 0;
     int ndim = 1;
-    int mx = 764, mbc = 2, mtot = mx + 2*mbc;
+    int mbc = 2, mx = mtot - 2*mbc;
     int nout = 10;
     int iframe = 0;
     
@@ -55,21 +66,18 @@ int main(int argc, char const *argv[])
     /* other */
     double cfl, cflmax = 1, cfldesire = 0.9;
     char outdir[] = "Output/euler";
-    
-    std::size_t local    = 256;
+
+    // -------------------------------------------------------------------------------//
+    //                               GPU configuration                                //
+    // -------------------------------------------------------------------------------//
     std::size_t numgroup = ((mtot - 1)/local + 1);
     std::size_t global   = numgroup * local;
     std::size_t l;
+    std::cout<<"Work Group Size = "<<local<<";\nTotal # of Work Items = "<<global<<std::endl;
 
-    // std::cout<<"local = "<<local<<"; global = "<<global<<std::endl;
-    /* Create context */
-    context = clCreateContext(0, 1, &device, NULL, NULL, &err);
-    CheckError(err);
-    /* Create commands */
-    commands = clCreateCommandQueue (context, device, 0, &err);
-    CheckError(err);
-
-    /* Create program, kernel from source */
+    // -------------------------------------------------------------------------------//
+    //                   Create program, kernel from source                           //
+    // -------------------------------------------------------------------------------//
     p_rp1_euler = CreateProgram(LoadKernel ("Kernel/rp1_euler.cl"), context);
     err     = clBuildProgram(p_rp1_euler, 1, &device, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
@@ -120,7 +128,9 @@ int main(int argc, char const *argv[])
     d_amdq   = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(double)*meqn*mtot, NULL, NULL);
     d_s      = clCreateBuffer(context, CL_MEM_READ_WRITE,  sizeof(double)*mtot     , NULL, NULL);
 
-    /* Set arguments */
+    // -------------------------------------------------------------------------------//
+    //                          Set Argument of Kernel                                //
+    // -------------------------------------------------------------------------------//
     /* QINIT */
     CheckError(clSetKernelArg(k_qinit, 0, sizeof(cl_mem), &d_q));
     CheckError(clSetKernelArg(k_qinit, 1, sizeof(int)   , &meqn));
@@ -159,6 +169,9 @@ int main(int argc, char const *argv[])
     CheckError(clSetKernelArg(k_max_speed, 0, sizeof(cl_mem), &d_s));
     CheckError(clSetKernelArg(k_max_speed, 1, sizeof(double)*local, NULL));
 
+    // -------------------------------------------------------------------------------//
+    //                          Main routine                                          //
+    // -------------------------------------------------------------------------------//
     CheckError(clEnqueueNDRangeKernel(commands, k_qinit, 1, NULL, &global, &local, 0, NULL, NULL));
     CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(double)*mtot*meqn, q, 0, NULL, NULL ));  
 
@@ -254,6 +267,9 @@ int main(int argc, char const *argv[])
     std::cout<<"Total execution time (secs) = "<<time_spent<<std::endl;
     std::cout<<"Time/step = "<<time_spent/totaltimestep<<std::endl;
 
+    // -------------------------------------------------------------------------------//
+    //                          Clean up memory                                       //
+    // -------------------------------------------------------------------------------//
     clReleaseMemObject(d_q);
     clReleaseMemObject(d_q_old);
     clReleaseMemObject(d_apdq);
