@@ -15,10 +15,11 @@
 int main(int argc, char const *argv[])
 {
     /* Opencl related variables */
-    cl_int            err;
+    cl_int            err = 0;
     cl_platform_id    platform = GetPlatform(0); 
-    cl_device_id      device = GetDevice(platform, 0);
+    cl_device_id      device   = GetDevice(platform, 0);
     cl_context        context;
+
     cl_command_queue  commands;
     cl_program        p_rp1_euler, p_qinit, p_bc1, 
                       p_update_q1, p_max_speed;
@@ -30,7 +31,6 @@ int main(int argc, char const *argv[])
     int meqn = 3, mwaves = 3, maux = 0;
     int ndim = 1;
     int mx = 764, mbc = 2, mtot = mx + 2*mbc;
-    int mtot = 1024*temp, mbc = 2, mx = mtot-2*mbc;
     int nout = 10;
     int iframe = 0;
     
@@ -61,7 +61,7 @@ int main(int argc, char const *argv[])
     std::size_t global   = numgroup * local;
     std::size_t l;
 
-    std::cout<<"local = "<<local<<"; global = "<<global<<std::endl;
+    // std::cout<<"local = "<<local<<"; global = "<<global<<std::endl;
     /* Create context */
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
     CheckError(err);
@@ -225,21 +225,20 @@ int main(int argc, char const *argv[])
             clEnqueueCopyBuffer (commands, d_q_old, d_q, 0, 0, sizeof(double)*mtot*meqn, 0, NULL, NULL);
             t = t_old;
         }
-
-        /* Read ouput array */
-        CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(double)*mtot*meqn, q, 0, NULL, NULL));
 #if output
-    for (int i = 0; i < mtot; ++i)
-    {
-            std::cout<<"rho["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[3*i]
-                     <<",  rhou["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[3*i+1]
-                     <<",     e["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[3*i+2]
-                     <<std::endl;
-    }
+        CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(double)*mtot*meqn, q, 0, NULL, NULL));
+        for (int i = 0; i < mtot; ++i)
+        {
+                std::cout<<"rho["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[3*i]
+                         <<",  rhou["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[3*i+1]
+                         <<",     e["<<std::setw(2)<<i<<"] = "<<std::setw(5)<<q[3*i+2]
+                         <<std::endl;
+        }
 #endif
         if (t >= tout)
         {
             std::cout<<"INFO: Solution "<<iframe<<" computed for time "<<t<<std::endl;
+            CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(double)*mtot*meqn, q, 0, NULL, NULL));
             out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux, outdir);
             iframe++;
             tout += dtout;
@@ -274,6 +273,6 @@ int main(int argc, char const *argv[])
     clReleaseProgram(p_update_q1);
     clReleaseProgram(p_max_speed);
     clReleaseContext(context);
-
+    clRetainDevice(device);
     return 0;
 }

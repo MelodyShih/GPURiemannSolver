@@ -1,4 +1,4 @@
-__kernel void rp1_euler1(__global double* d_q, 
+__kernel void rp1_euler(__global double* d_q, 
                         __global double* d_apdq, 
                         __global double* d_amdq,
                         __global double* d_s,
