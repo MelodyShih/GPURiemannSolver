@@ -6,6 +6,35 @@ This module is imported by the plotting routines and then the
 function setplot is called to set the plot parameters.
     
 """ 
+# #--------------------------
+# def setplot(plotdata):
+# #--------------------------
+#     """ 
+#     Specify what is to be plotted at each frame.
+#     Input:  plotdata, an instance of visclaw.data.ClawPlotData.
+#     Output: a modified version of plotdata.
+#     """ 
+#     plotdata.clearfigures()  # clear any old figures,axes,items data
+
+#     plotfigure = plotdata.new_plotfigure(name='', figno=0)
+
+#     plotaxes = plotfigure.new_plotaxes()
+#     plotaxes.axescmd = 'subplot(211)'
+#     plotaxes.title = 'Density'
+
+#     plotitem = plotaxes.new_plotitem(plot_type='1d')
+#     plotitem.plot_var = 0
+#     plotitem.kwargs = {'linewidth':3}
+    
+#     plotaxes = plotfigure.new_plotaxes()
+#     plotaxes.axescmd = 'subplot(212)'
+#     plotaxes.title = 'Energy'
+
+#     plotitem = plotaxes.new_plotitem(plot_type='1d')
+#     plotitem.plot_var = 2
+#     plotitem.kwargs = {'linewidth':3}
+    
+#     return plotdata
 
 #--------------------------
 def setplot(plotdata):
@@ -22,11 +51,11 @@ def setplot(plotdata):
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
     # Figure for q[0]
-    plotfigure = plotdata.new_plotfigure(name='Density and Energy', figno=1)
+    plotfigure = plotdata.new_plotfigure(name='Density', figno=0)
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = 'subplot(2,1,1)'   # top figure
+    plotaxes.axescmd = 'subplot(111)'   # top figure
     plotaxes.xlimits = 'auto'
     plotaxes.ylimits = 'auto'
     plotaxes.title = 'Density'
@@ -39,10 +68,10 @@ def setplot(plotdata):
 
 
     # Figure for q[1]
-
+    plotfigure = plotdata.new_plotfigure(name='Energy', figno=1)
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = 'subplot(2,1,2)'   # bottom figure
+    plotaxes.axescmd = 'subplot(111)'   # bottom figure
     plotaxes.xlimits = 'auto'
     plotaxes.ylimits = 'auto'
     plotaxes.title = 'Energy'
