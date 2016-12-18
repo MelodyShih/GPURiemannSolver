@@ -12,6 +12,10 @@
 #define output 0
 #endif
 
+#ifndef info
+#define info 0
+#endif
+
 int main(int argc, char const *argv[])
 {
     if (argc < 3)
@@ -50,7 +54,7 @@ int main(int argc, char const *argv[])
     double dx = (xupper - xlower)/mx;
     
     /* time */
-    int maxtimestep = 10000000;
+    int maxtimestep = 1000000000;
     int totaltimestep;
     double t = 0, t_old;
     double t_start = 0, t_final = 0.038;
@@ -73,7 +77,9 @@ int main(int argc, char const *argv[])
     std::size_t numgroup = ((mtot - 1)/local + 1);
     std::size_t global   = numgroup * local;
     std::size_t l;
+#if info
     std::cout<<"Work Group Size = "<<local<<";\nTotal # of Work Items = "<<global<<std::endl;
+#endif
 
     // -------------------------------------------------------------------------------//
     //                   Create program, kernel from source                           //
@@ -234,7 +240,9 @@ int main(int argc, char const *argv[])
             //cflmax = std::max(cfl, cflmax);
         }else{
             // Reject this step => Take a smaller step
+#if info
             std::cout<<"-----Reject this step-----"<<std::endl;
+#endif 
             clEnqueueCopyBuffer (commands, d_q_old, d_q, 0, 0, sizeof(double)*mtot*meqn, 0, NULL, NULL);
             t = t_old;
         }
@@ -250,7 +258,9 @@ int main(int argc, char const *argv[])
 #endif
         if (t >= tout)
         {
+#if info
             std::cout<<"INFO: Solution "<<iframe<<" computed for time "<<t<<std::endl;
+#endif
             CheckError(clEnqueueReadBuffer(commands, d_q, CL_TRUE, 0, sizeof(double)*mtot*meqn, q, 0, NULL, NULL));
             out1(meqn, mbc, mx, xlower, dx, q, t, iframe, NULL, maux, outdir);
             iframe++;

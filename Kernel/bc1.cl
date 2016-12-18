@@ -14,7 +14,7 @@ __kernel void bc1(__global double* d_q,
             d_q[meqn*i + m] = d_q[meqn*(i - mx)+m];
         }
     }
-    /* zero-extrapolation */
+    /* zero-extrapolation 
     if( i < mbc){
         for(int m = 0; m<meqn; m++){
             d_q[meqn*i + m] = d_q[meqn*(mbc)+m];
@@ -26,4 +26,16 @@ __kernel void bc1(__global double* d_q,
         }
     }
     /* Wall */
+    if( i < mbc){
+        for(int m = 0; m<meqn; m++){
+            d_q[meqn*i + m] = d_q[meqn*(mbc)+m];
+        }
+        d_q[meqn*i + 1] = -d_q[meqn*(mbc)+1];
+    }
+    if( i > mx + mbc - 1 && i < mx + 2*mbc){
+        for(int m = 0; m<meqn; m++){
+            d_q[meqn*i + m] = d_q[meqn*(mx+mbc-1)+m];
+        }
+        d_q[meqn*i + 1] = -d_q[meqn*(mx+mbc-1)+1];
+    }
 }

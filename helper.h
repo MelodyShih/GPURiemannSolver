@@ -4,6 +4,10 @@
 #include <fstream>
 #include <sstream>
 
+#ifndef info
+#define info 0
+#endif
+
 void CheckError (cl_int err)
 {
     if (err != CL_SUCCESS) {
@@ -52,7 +56,9 @@ cl_platform_id GetPlatform(int id){
     if (platformIdCount == 0) {
         std::cerr << "No OpenCL platform found" << std::endl;
     } else {
+#if info
         std::cout << "Found " << platformIdCount << " platform(s)" << std::endl;
+#endif
     }
 
     std::vector<cl_platform_id> platformIds (platformIdCount);
@@ -60,7 +66,9 @@ cl_platform_id GetPlatform(int id){
 
     /* Print out the platform information */
     for (cl_uint i = 0; i < platformIdCount; ++i) {
+#if info
         std::cout << "\t (" << (i+1) << ") : " << GetPlatformName (platformIds [i]) << std::endl;
+#endif
     }
 
     return platformIds[id];
@@ -88,14 +96,18 @@ cl_device_id GetDevice(cl_platform_id platform, int id){
     if (deviceIdCount == 0) {
         std::cerr << "No OpenCL devices found" << std::endl;
     } else {
+#if info
         std::cout << "Found " << deviceIdCount << " device(s)" << std::endl;
+#endif
     }
 
     std::vector<cl_device_id> deviceIds (deviceIdCount);
     clGetDeviceIDs (platform, CL_DEVICE_TYPE_GPU, deviceIdCount, deviceIds.data (), NULL);
 
     for (cl_uint i = 0; i < deviceIdCount; ++i) {
+#if info
         std::cout << "\t (" << (i+1) << ") : " << GetDeviceName (deviceIds [i]) << std::endl;
+#endif
     }
     return deviceIds[0];    
 }
