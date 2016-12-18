@@ -1,0 +1,155 @@
+Work group size =  32
+Total time steps = 4588
+Total execution time (secs) = 0.53
+Time/step = 0.000115519
+
+Work group size =  64
+Total time steps = 4588
+Total execution time (secs) = 0.5
+Time/step = 0.00010898
+
+Work group size =  96
+Total time steps = 4588
+Total execution time (secs) = 0.52
+Time/step = 0.000113339
+
+Work group size =  128
+Total time steps = 4588
+Total execution time (secs) = 0.51
+Time/step = 0.00011116
+
+Work group size =  160
+Total time steps = 4588
+Total execution time (secs) = 0.49
+Time/step = 0.0001068
+
+Work group size =  192
+Total time steps = 4588
+Total execution time (secs) = 0.53
+Time/step = 0.000115519
+
+Work group size =  224
+Total time steps = 4588
+Total execution time (secs) = 0.51
+Time/step = 0.00011116
+
+Work group size =  256
+Total time steps = 4588
+Total execution time (secs) = 0.52
+Time/step = 0.000113339
+
+Work group size =  288
+Total time steps = 4588
+Total execution time (secs) = 0.48
+Time/step = 0.000104621
+
+Work group size =  320
+Total time steps = 4588
+Total execution time (secs) = 0.54
+Time/step = 0.000117698
+
+Work group size =  352
+Total time steps = 4588
+Total execution time (secs) = 0.5
+Time/step = 0.00010898
+
+Work group size =  384
+Total time steps = 4588
+Total execution time (secs) = 0.51
+Time/step = 0.00011116
+
+Work group size =  416
+Total time steps = 4587
+Total execution time (secs) = 0.53
+Time/step = 0.000115544
+
+Work group size =  448
+Total time steps = 4588
+Total execution time (secs) = 0.51
+Time/step = 0.00011116
+
+Work group size =  480
+Total time steps = 4588
+Total execution time (secs) = 0.53
+Time/step = 0.000115519
+
+Work group size =  512
+Total time steps = 4588
+Total execution time (secs) = 0.53
+Time/step = 0.000115519
+
+Work group size =  544
+Total time steps = 4588
+Total execution time (secs) = 0.55
+Time/step = 0.000119878
+
+Work group size =  576
+Total time steps = 4588
+Total execution time (secs) = 0.53
+Time/step = 0.000115519
+
+Work group size =  608
+Total time steps = 4588
+Total execution time (secs) = 0.55
+Time/step = 0.000119878
+
+Work group size =  640
+Total time steps = 4588
+Total execution time (secs) = 0.56
+Time/step = 0.000122058
+
+Work group size =  672
+Total time steps = 4588
+Total execution time (secs) = 0.56
+Time/step = 0.000122058
+
+Work group size =  704
+Total time steps = 4588
+Total execution time (secs) = 0.56
+Time/step = 0.000122058
+
+Work group size =  736
+Total time steps = 4585
+Total execution time (secs) = 0.56
+Time/step = 0.000122137
+
+Work group size =  768
+Total time steps = 4588
+Total execution time (secs) = 0.56
+Time/step = 0.000122058
+
+Work group size =  800
+Total time steps = 4589
+Total execution time (secs) = 0.58
+Time/step = 0.000126389
+
+Work group size =  832
+Total time steps = 4588
+Total execution time (secs) = 0.59
+Time/step = 0.000128596
+
+Work group size =  864
+Total time steps = 4588
+Total execution time (secs) = 0.59
+Time/step = 0.000128596
+
+Work group size =  896
+Total time steps = 4589
+Total execution time (secs) = 0.56
+Time/step = 0.000122031
+
+Work group size =  928
+Total time steps = 4589
+Total execution time (secs) = 0.61
+Time/step = 0.000132927
+
+Work group size =  960
+Total time steps = 4588
+Total execution time (secs) = 0.6
+Time/step = 0.000130776
+
+Work group size =  992
+Total time steps = 4588
+Total execution time (secs) = 0.6
+Time/step = 0.000130776
+
