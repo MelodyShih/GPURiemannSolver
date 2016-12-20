@@ -2,5 +2,5 @@
 
 ##GPU acceleration of Riemann Solver
 
-1. 1d linear acoustic equation (finished)
-2. 1d euler equation
+1. 1d linear acoustic equations
+2. 1d euler equations 
