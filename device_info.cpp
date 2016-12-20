@@ -20,6 +20,7 @@ int main(int argc, char const *argv[])
     clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(num), &num, NULL);
     clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size), &size, NULL);
     clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size1), &size1, NULL);
+    
     std::cout<<"CL_DEVICE_MAX_COMPUTE_UNITS = "<<num<<std::endl;
     std::cout<<"CL_DEVICE_MAX_WORK_GROUP_SIZE = "<<size<<std::endl;
     std::cout<<"CL_DEVICE_MAX_WORK_ITEM_SIZES = "<<size1<<std::endl;
